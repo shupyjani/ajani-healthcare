@@ -1,0 +1,220 @@
+/*
+  Motion system.
+
+  Paired with src/lib/motion.js. Every rule here is inert until that controller
+  adds `is-pending` to an element after mount, so the stylesheet on its own can
+  never hide content: `.reveal` with no state class has no visual declarations.
+
+  Nothing in this file animates a property that affects layout. Reveals move
+  only `opacity` and `transform`, so no section changes height, no padding
+  moves and no anchor target shifts while a reveal is running.
+
+  Timings are tuned for a calm, deliberate entrance. Two earlier passes were
+  too quick: the first read as a flicker, the second still had several groups
+  arriving on top of one another. Durations now sit near a second and the
+  stagger is wide enough that each group lands on its own, with the whole hero
+  settling in about 1.8s.
+
+  The first group carries no delay, so content starts arriving immediately —
+  the calm comes from how long each move takes, never from waiting to begin.
+*/
+
+:root {
+  /* Durations. Reveals are slow enough to read as deliberate; interaction
+     feedback stays quick, because a hover that lags feels broken. */
+  --motion-duration: 950ms;
+  --motion-duration-headline: 1080ms;
+  --motion-duration-panel: 1120ms;
+  /* Interaction feedback stays quick whatever the reveals do: a hover that
+     takes a second feels broken, not premium. */
+  --motion-duration-short: 220ms;
+
+  /* Stagger. The hero steps a little wider than the rest of the page: it has
+     six groups to sequence and the reader is looking straight at it. */
+  --motion-stagger: 130ms;
+  --motion-stagger-hero: 160ms;
+
+  /* A decelerating curve: quick to leave, slow to settle. Nothing overshoots,
+     so no reveal bounces. */
+  --motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  --reveal-order: 0;
+}
+
+/* --- Reveal states ---------------------------------------------------- */
+
+/* Carries the stagger arithmetic and nothing else. An element that is only
+   `.reveal` is a normal, fully visible element; this class is a hook, not a
+   style, which is what keeps content visible before the controller runs. */
+.reveal {
+  --reveal-delay: calc(var(--reveal-order, 0) * var(--motion-stagger));
+}
+
+.reveal.is-pending {
+  opacity: 0;
+  transform: var(--reveal-from, translate3d(0, 22px, 0));
+  /* No transition here on purpose. This state is applied before the first
+     paint, so it must land instantly; a transition would fade the content
+     out in front of the reader. */
+}
+
+.reveal.is-revealed {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--reveal-duration, var(--motion-duration)) var(--motion-ease)
+      var(--reveal-delay, 0ms),
+    transform var(--reveal-duration, var(--motion-duration)) var(--motion-ease)
+      var(--reveal-delay, 0ms);
+}
+
+/* --- Variants --------------------------------------------------------- */
+
+/* Supporting copy, list items, cards: a rise with enough travel to be seen. */
+.reveal--up {
+  --reveal-from: translate3d(0, 22px, 0);
+}
+
+/* Eyebrow and section labels: a horizontal entrance, which reads as the label
+   sliding in ahead of the heading it introduces. */
+.reveal--label {
+  --reveal-from: translate3d(-22px, 0, 0);
+}
+
+/* The principal headline settles from under its final size. At 0.95 the
+   resolve is visible without ever reading as a zoom. */
+.reveal--headline {
+  --reveal-from: translate3d(0, 16px, 0) scale(0.95);
+  --reveal-duration: var(--motion-duration-headline);
+  transform-origin: left top;
+}
+
+.closing-cta .reveal--headline {
+  transform-origin: center top;
+}
+
+/* Large panels: the hero visual and the product panels. */
+.reveal--panel {
+  --reveal-from: translate3d(0, 28px, 0) scale(0.975);
+  --reveal-duration: var(--motion-duration-panel);
+}
+
+/* The hero's own groups step wider than the rest of the page. Set on the
+   section so every descendant reveal inherits it. */
+.hero {
+  --motion-stagger: var(--motion-stagger-hero);
+}
+
+/* --- Hero visual entrance --------------------------------------------- */
+
+/*
+  The hero diagram assembles itself once: the hub arrives, the connector into
+  each strand draws, then the strand it feeds appears. Driven entirely off the
+  panel's own state classes, so it inherits the same progressive-enhancement
+  and reduced-motion guarantees as every other reveal.
+
+  The connectors are the ::before pseudo-elements already used to draw the
+  diagram, scaled from their top edge. Scaling a 2px line changes no layout.
+
+  --hv-base starts the sequence shortly after the panel itself begins to fade
+  in, so the diagram materialises with its contents assembling inside it
+  rather than arriving already built. --hv-lead is how far ahead of a strand
+  its incoming connector draws, which is what makes the order legible.
+*/
+
+.hero-visual-panel {
+  --hv-base: 780ms;
+  --hv-step: 180ms;
+  --hv-lead: 100ms;
+  --hv-duration: 520ms;
+  --hv-line-duration: 420ms;
+}
+
+.hero-visual-panel.is-pending .hv-badge,
+.hero-visual-panel.is-pending .hv-hub-text,
+.hero-visual-panel.is-pending .hv-strand-text {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+}
+
+.hero-visual-panel.is-pending .hv-hub::before,
+.hero-visual-panel.is-pending .hv-strand::before {
+  transform: scaleY(0);
+}
+
+.hero-visual-panel .hv-hub::before,
+.hero-visual-panel .hv-strand::before {
+  transform-origin: top center;
+}
+
+.hero-visual-panel.is-revealed .hv-badge,
+.hero-visual-panel.is-revealed .hv-hub-text,
+.hero-visual-panel.is-revealed .hv-strand-text {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--hv-duration) var(--motion-ease) var(--hv-delay, 0ms),
+    transform var(--hv-duration) var(--motion-ease) var(--hv-delay, 0ms);
+}
+
+/* The connector runs --hv-lead ahead of its own row's content, which places it
+   between the row above and the row it feeds. */
+.hero-visual-panel.is-revealed .hv-hub::before,
+.hero-visual-panel.is-revealed .hv-strand::before {
+  transform: scaleY(1);
+  transition: transform var(--hv-line-duration) var(--motion-ease)
+    calc(var(--hv-delay, 0ms) + var(--hv-lead, 0ms));
+}
+
+.hero-visual-panel .hv-hub {
+  --hv-delay: var(--hv-base);
+}
+
+.hero-visual-panel .hv-strand:nth-child(1) {
+  --hv-delay: calc(var(--hv-base) + var(--hv-step));
+}
+
+.hero-visual-panel .hv-strand:nth-child(2) {
+  --hv-delay: calc(var(--hv-base) + (2 * var(--hv-step)));
+}
+
+.hero-visual-panel .hv-strand:nth-child(3) {
+  --hv-delay: calc(var(--hv-base) + (3 * var(--hv-step)));
+}
+
+/* --- Reduced motion --------------------------------------------------- */
+
+/*
+  The controller already declines to apply `is-pending` when reduced motion is
+  requested, so in practice these rules are a second line of defence. They
+  matter if the preference is switched on mid-visit, after a pending state has
+  already been applied: content becomes visible immediately rather than
+  waiting on an observer that may never fire.
+
+  Reduced-motion users get the same content, in the same order, with no
+  transform, no stagger and no transition.
+*/
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal.is-pending,
+  .reveal.is-revealed,
+  .hero-visual-panel.is-pending .hv-badge,
+  .hero-visual-panel.is-pending .hv-hub-text,
+  .hero-visual-panel.is-pending .hv-strand-text,
+  .hero-visual-panel.is-revealed .hv-badge,
+  .hero-visual-panel.is-revealed .hv-hub-text,
+  .hero-visual-panel.is-revealed .hv-strand-text {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .hero-visual-panel.is-pending .hv-hub::before,
+  .hero-visual-panel.is-pending .hv-strand::before,
+  .hero-visual-panel.is-revealed .hv-hub::before,
+  .hero-visual-panel.is-revealed .hv-strand::before {
+    transform: none !important;
+    transition: none !important;
+  }
+}

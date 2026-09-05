@@ -1,0 +1,82 @@
+.featured-product {
+  background-color: var(--color-bg-inverse);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: 0 10px 30px rgba(11, 40, 48, 0.1);
+  transition: box-shadow var(--motion-duration-short, 200ms) ease;
+}
+
+/* A panel this size should settle rather than move, so the hover is depth
+   only. Nothing here carries information that hover alone reveals. */
+.featured-product:hover {
+  box-shadow: 0 16px 40px rgba(11, 40, 48, 0.16);
+}
+
+.featured-product .eyebrow {
+  color: var(--color-accent);
+}
+
+.featured-product-title {
+  color: var(--color-text-inverse);
+  font-size: 2rem;
+  margin-bottom: var(--space-2);
+}
+
+.status-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+}
+
+.status-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background-color: rgba(255, 253, 248, 0.1);
+  border: 1px solid var(--color-border-inverse);
+  color: var(--color-text-inverse);
+}
+
+.featured-product-summary {
+  max-width: 60ch;
+  font-size: 1.05rem;
+  color: var(--color-text-inverse-muted);
+  margin-bottom: var(--space-2);
+}
+
+.featured-product-note {
+  max-width: 60ch;
+  font-size: 0.9rem;
+  color: var(--color-text-inverse-muted);
+  border-left: 3px solid var(--color-accent);
+  padding-left: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.featured-product .btn--outline {
+  color: var(--color-text-inverse);
+  border-color: var(--color-border-inverse);
+}
+
+.featured-product .btn--outline:hover,
+.featured-product .btn--outline:focus-visible {
+  border-color: var(--ahc-surface);
+  color: var(--color-text-inverse);
+}
+
+@media screen and (max-width: 640px) {
+  .featured-product {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .featured-product-title {
+    font-size: 1.6rem;
+  }
+}

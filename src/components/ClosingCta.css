@@ -1,0 +1,16 @@
+.closing-cta {
+  background-color: var(--color-bg-canvas);
+  text-align: center;
+}
+
+.closing-cta-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+.closing-cta .section-heading {
+  max-width: none;
+}

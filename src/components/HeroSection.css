@@ -1,0 +1,82 @@
+.hero {
+  background-color: var(--color-bg-canvas);
+  padding: var(--space-6) 0;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.hero-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: var(--space-5);
+  align-items: center;
+}
+
+.hero-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-brand-strong);
+  margin-bottom: var(--space-2);
+}
+
+.hero-heading {
+  font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+  max-width: 22ch;
+  margin-bottom: var(--space-3);
+}
+
+.hero-lede {
+  font-size: 1.1rem;
+  color: var(--color-text-secondary);
+  max-width: 52ch;
+  margin-bottom: var(--space-4);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.hero-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.hero-trust li {
+  display: flex;
+  align-items: center;
+}
+
+.hero-trust li::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 0.5rem;
+  border-radius: 2px;
+  background-color: var(--color-accent);
+}
+
+@media screen and (max-width: 900px) {
+  .hero-inner {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  /* The visual stays. It carries the same three areas as the page's prose and
+     is legible at narrow widths, so there is nothing to gain by hiding it. */
+  .hero-visual {
+    max-width: 30rem;
+  }
+}

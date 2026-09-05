@@ -1,0 +1,7 @@
+.products {
+  background-color: var(--color-bg-canvas);
+}
+
+.products .featured-product {
+  margin-top: var(--space-5);
+}

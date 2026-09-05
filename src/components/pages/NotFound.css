@@ -1,0 +1,17 @@
+.not-found {
+  background-color: var(--color-bg-page);
+  padding: var(--space-6) 0;
+}
+
+.not-found-inner {
+  max-width: 44rem;
+}
+
+.not-found h1 {
+  font-size: clamp(1.8rem, 3vw, 2.3rem);
+  margin-top: var(--space-2);
+}
+
+.not-found .btn-row {
+  margin-top: var(--space-3);
+}

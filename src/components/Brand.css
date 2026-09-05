@@ -1,0 +1,64 @@
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+}
+
+.brand-mark {
+  flex-shrink: 0;
+}
+
+.brand-mark-plate {
+  fill: var(--color-brand-strong);
+}
+
+.brand-mark-frame {
+  fill: var(--color-accent);
+}
+
+.brand-mark-bar {
+  fill: var(--ahc-surface);
+}
+
+.brand--inverse .brand-mark-plate {
+  fill: var(--ahc-surface);
+}
+
+.brand--inverse .brand-mark-frame {
+  fill: var(--color-brand-strong);
+}
+
+.brand--inverse .brand-mark-bar {
+  fill: var(--color-accent);
+}
+
+.brand-wordmark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  font-family: var(--font-serif);
+}
+
+.brand-wordmark-primary {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 0.01em;
+}
+
+.brand-wordmark-secondary {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.brand--inverse .brand-wordmark-primary {
+  color: var(--color-text-inverse);
+}
+
+.brand--inverse .brand-wordmark-secondary {
+  color: var(--color-text-inverse-muted);
+}

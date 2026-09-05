@@ -1,0 +1,157 @@
+.services {
+  background-color: var(--color-bg-page);
+}
+
+.service-cards {
+  list-style: none;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  /* Default, but stated: the three capabilities are equal, so the cards match
+     height whatever their content length. */
+  align-items: stretch;
+}
+
+.service-card {
+  background-color: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  /* Padding lives on the header and body so the header panel can run to the
+     card's edges; overflow clips it to the rounded corners. */
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition:
+    border-color var(--motion-duration-short, 200ms) ease,
+    box-shadow var(--motion-duration-short, 200ms) ease,
+    transform var(--motion-duration-short, 200ms) ease;
+}
+
+.service-card:hover {
+  border-color: var(--color-border);
+  box-shadow: 0 12px 28px rgba(11, 40, 48, 0.08);
+  transform: translateY(-2px);
+}
+
+/* --- Header panel ------------------------------------------------------ */
+
+/* Pale teal, not a saturated block: it separates the heading from the body
+   without turning the card into a banner. */
+.service-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-brand-soft);
+  border-bottom: 1px solid rgba(13, 79, 76, 0.14);
+}
+
+/* The icon badge doubles as the card's number. Decorative throughout: the
+   heading beside it is what carries the meaning. */
+.service-card-mark {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  background-color: var(--ahc-surface);
+  border: 1px solid rgba(13, 79, 76, 0.18);
+  color: var(--color-brand-strong);
+}
+
+.service-card-index {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background-color: var(--color-brand-strong);
+  color: var(--color-text-inverse);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+/* #0b2830 on #e2efea is 13.6:1 — comfortably past AA for a heading. */
+.service-card-title {
+  font-size: 1.2rem;
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* --- Body -------------------------------------------------------------- */
+
+.service-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: var(--space-4);
+}
+
+.service-card-description {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+/* Custom markers so the bullets carry the brand colour while the text stays
+   in the ordinary reading ink. */
+.service-card-list {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.service-card-list li {
+  position: relative;
+  padding-left: 1.35rem;
+  margin-bottom: 0.45rem;
+}
+
+.service-card-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background-color: var(--color-brand);
+}
+
+.service-card-note {
+  margin-top: auto;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-soft);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0;
+}
+
+@media screen and (max-width: 960px) {
+  .service-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  .service-card-header {
+    padding: var(--space-3);
+  }
+
+  .service-card-body {
+    padding: var(--space-3);
+  }
+}

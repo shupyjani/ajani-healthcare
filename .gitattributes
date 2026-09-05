@@ -1,0 +1,12 @@
+# Normalise line endings in the repository to LF regardless of the platform a
+# checkout happens on. Without this, working on Windows stages CRLF and the
+# first commit from any other machine shows every file as changed.
+* text=auto eol=lf
+
+# Generated icon assets are binary and must never be line-ending converted.
+*.png binary
+*.ico binary
+
+# Vector and manifest assets are text.
+*.svg text eol=lf
+*.json text eol=lf

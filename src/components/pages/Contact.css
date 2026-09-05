@@ -1,0 +1,189 @@
+.contact-main {
+  background-color: var(--color-bg-page);
+  padding: calc(var(--space-5) + var(--header-gap)) 0 var(--space-6);
+}
+
+.contact-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.contact-heading {
+  font-size: clamp(1.8rem, 3vw, 2.3rem);
+  margin-top: var(--space-2);
+}
+
+.contact-note {
+  margin-top: var(--space-3);
+  padding: var(--space-2);
+  border-left: 3px solid var(--color-accent);
+  background-color: var(--color-bg-subtle);
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.contact-form {
+  background-color: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.contact-form-heading {
+  font-size: 1.25rem;
+  margin-bottom: var(--space-3);
+}
+
+.form-field {
+  margin-bottom: var(--space-3);
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  margin-bottom: 0.35rem;
+}
+
+.form-required {
+  color: var(--color-status-error);
+}
+
+.form-hint {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin: 0 0 0.4rem;
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 0.75rem;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--ahc-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+textarea.form-control {
+  min-height: 9rem;
+  resize: vertical;
+}
+
+.form-control:hover {
+  border-color: var(--color-brand);
+}
+
+.form-control:focus-visible {
+  border-color: var(--color-brand-strong);
+}
+
+.form-control[aria-invalid='true'] {
+  border-color: var(--color-status-error);
+  box-shadow: inset 0 0 0 1px var(--color-status-error);
+}
+
+/* Status and error text.
+   Both colours are measured against --ahc-surface (#fffdf8), which is the
+   background of every .form-status and of the surrounding form:
+     --color-status-error   #9a1c1c = 8.08:1
+     --color-status-success #0d4f4c = 9.22:1
+   Comfortably past the 4.5:1 AA minimum for body text. */
+.form-error {
+  margin: 0.4rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-status-error);
+}
+
+.form-status {
+  background-color: var(--ahc-surface);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  margin-bottom: var(--space-3);
+  border-left: 4px solid currentColor;
+}
+
+.form-status--error {
+  color: var(--color-status-error);
+  border: 1px solid rgba(154, 28, 28, 0.35);
+  border-left: 4px solid var(--color-status-error);
+}
+
+.form-status--success {
+  color: var(--color-status-success);
+  border: 1px solid rgba(13, 79, 76, 0.35);
+  border-left: 4px solid var(--color-status-success);
+}
+
+.form-status-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: inherit;
+}
+
+.form-status-body {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.form-status-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+
+.form-status-list a {
+  color: inherit;
+  font-weight: 600;
+}
+
+/* Inherits the panel's status colour, which is measured against the same
+   --ahc-surface background: #9a1c1c on #fffdf8 = 8.08:1. Underlined so the
+   fallback reads as a link and not just as emphasised text. */
+.form-status-link {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* The error summary is focused programmatically, but unlike a section target
+   it is a short, transient message the reader is being sent to — a ring here
+   helps. The attribute selector keeps this ahead of the generic
+   [tabindex='-1']:focus rule in theme.css whatever order the sheets load in. */
+.form-status[tabindex='-1']:focus {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.form-legend {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.contact-submit {
+  width: 100%;
+}
+
+@media screen and (max-width: 900px) {
+  .contact-inner {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .contact-form {
+    padding: var(--space-3);
+  }
+}
