@@ -187,3 +187,10 @@ textarea.form-control {
     padding: var(--space-3);
   }
 }
+
+/* The send outcome sits beneath the submit button rather than above the form,
+   so its spacing is inverted: the gap belongs above it, not below. */
+.form-feedback {
+  margin-top: var(--space-3);
+  margin-bottom: 0;
+}

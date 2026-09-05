@@ -44,6 +44,23 @@ describe('contact form with no email provider configured', () => {
     expect(CONTACT_EMAIL).toBe('contact@ajanihealthcare.com');
   });
 
+  it('keeps the warning above the fields, where it is read before typing', () => {
+    renderApp('/contact');
+
+    const warning = screen.getByText(/The online form is temporarily unavailable/i);
+    const firstField = screen.getByLabelText(/Your name/i);
+    const button = screen.getByRole('button', { name: /Send enquiry/i });
+
+    /* Unlike the send outcome, this one has to be seen before anyone starts
+       filling the form in, so it stays at the top rather than moving below
+       the button. */
+    const precedes = (a, b) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    expect(precedes(warning, firstField)).toBe(true);
+    expect(precedes(warning, button)).toBe(true);
+  });
+
   it('never suggests an enquiry was sent', () => {
     renderApp('/contact');
 

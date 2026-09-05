@@ -1,8 +1,9 @@
-import React, { useReducer, useRef } from 'react';
+import React, { useEffect, useReducer, useRef } from 'react';
 import { FIELDS, INITIAL_STATE, formReducer, toPayload, validate } from '../../lib/contactForm';
 import { getEmailConfig } from '../../lib/emailConfig';
 import { sendEnquiry } from '../../lib/sendEnquiry';
 import { CONTACT_EMAIL } from '../../lib/site';
+import { prefersReducedMotion } from '../../lib/motion';
 import './Contact.css';
 
 /*
@@ -17,8 +18,40 @@ function Contact() {
   const [state, dispatch] = useReducer(formReducer, INITIAL_STATE);
   const { isConfigured } = getEmailConfig();
   const errorSummaryRef = useRef(null);
+  const feedbackRef = useRef(null);
 
   const isSending = state.status === 'sending';
+  const hasSendOutcome = state.status === 'sent' || state.status === 'error';
+
+  /*
+   * The send outcome is rendered below the submit button, which on a long form
+   * can be off screen by the time the request resolves. Move focus to it and
+   * bring it into view so it is not something the reader has to go looking
+   * for. Focus first with preventScroll, then scroll, so the two do not fight
+   * — the same ordering section navigation uses.
+   *
+   * "nearest" scrolls the minimum distance needed, and the smooth behaviour is
+   * dropped under prefers-reduced-motion. The message itself is permanent: it
+   * stays until the form is edited again.
+   */
+  useEffect(() => {
+    if (!hasSendOutcome) return;
+
+    const node = feedbackRef.current;
+    if (!node) return;
+
+    node.focus({ preventScroll: true });
+
+    if (typeof node.scrollIntoView === 'function') {
+      node.scrollIntoView({
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        block: 'nearest',
+      });
+    }
+    /* Keyed on hasSendOutcome alone: every route to an outcome passes through
+       "sending" first, which flips this false and back, so a second submit
+       re-runs the effect even when the outcome is unchanged. */
+  }, [hasSendOutcome]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -59,6 +92,10 @@ function Contact() {
         <form className="contact-form" onSubmit={handleSubmit} noValidate>
           <h2 className="contact-form-heading">Send an enquiry</h2>
 
+          {/* Two things stay above the fields. The configuration warning has to
+              be read before anyone starts typing, and every line of the
+              validation summary is a link to the field it names, so it has to
+              precede them. Only the send outcome moves below the button. */}
           {state.status === 'invalid' && (
             <div
               className="form-status form-status--error"
@@ -74,24 +111,6 @@ function Contact() {
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
-
-          {state.status === 'error' && (
-            <div className="form-status form-status--error" role="alert">
-              <p className="form-status-title">Your enquiry could not be sent</p>
-              <p className="form-status-body">
-                Something went wrong on the way to our inbox. Please try again in a moment.
-              </p>
-            </div>
-          )}
-
-          {state.status === 'sent' && (
-            <div className="form-status form-status--success" role="status">
-              <p className="form-status-title">Thank you, your enquiry has been sent</p>
-              <p className="form-status-body">
-                We have received your message and will reply to the email address you gave.
-              </p>
             </div>
           )}
 
@@ -177,6 +196,38 @@ function Contact() {
           >
             {isSending ? 'Sending your enquiry…' : 'Send enquiry'}
           </button>
+
+          {/* The outcome of pressing the button, directly beneath the button.
+              Rendered in place and left there: it is not a toast and does not
+              time out. Both states share one node so focus and scrolling have a
+              single target, with the role switching between the polite
+              confirmation and the assertive failure. */}
+          {hasSendOutcome && (
+            <div
+              className={`form-status form-feedback ${
+                state.status === 'sent' ? 'form-status--success' : 'form-status--error'
+              }`}
+              role={state.status === 'sent' ? 'status' : 'alert'}
+              tabIndex={-1}
+              ref={feedbackRef}
+            >
+              {state.status === 'sent' ? (
+                <>
+                  <p className="form-status-title">Thank you, your enquiry has been sent</p>
+                  <p className="form-status-body">
+                    We have received your message and will reply to the email address you gave.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="form-status-title">Your enquiry could not be sent</p>
+                  <p className="form-status-body">
+                    Something went wrong on the way to our inbox. Please try again in a moment.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
         </form>
       </div>
     </main>
