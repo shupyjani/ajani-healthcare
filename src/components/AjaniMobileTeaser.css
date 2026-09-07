@@ -1,0 +1,230 @@
+/*
+  The Ajani Mobile splash teaser.
+
+  A wallpaper, not an interface. Every shape here is decoration drawn in CSS
+  from the Ajani palette; the only interactive thing in the frame is the
+  Explore link.
+
+  Nothing animates. The card the teaser sits in is revealed once by the shared
+  Reveal system, and that is the whole of the motion.
+*/
+
+.ajani-mobile-teaser .phone-frame-screen {
+  background-image: linear-gradient(168deg, #14424a 0%, #0b2931 58%, #08222a 100%);
+}
+
+/* Clips the decoration to the screen's rounding so the frame itself does not
+   have to — which is what lets the CTA's focus ring paint in full. */
+.teaser-wallpaper {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.teaser-glow {
+  position: absolute;
+  top: -18%;
+  left: -30%;
+  width: 150%;
+  height: 55%;
+  border-radius: 50%;
+  background-image: radial-gradient(
+    closest-side,
+    rgba(23, 108, 101, 0.55),
+    rgba(23, 108, 101, 0)
+  );
+}
+
+/* Three concentric arcs reading outward from the mark: the "connected
+   strands" idea the hero diagram uses, reduced to its simplest form. */
+.teaser-arc {
+  position: absolute;
+  left: 50%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 253, 248, 0.14);
+  transform: translateX(-50%);
+}
+
+.teaser-arc--one {
+  top: 6%;
+  width: 116%;
+  aspect-ratio: 1;
+}
+
+.teaser-arc--two {
+  top: 18%;
+  width: 156%;
+  aspect-ratio: 1;
+  border-color: rgba(211, 162, 82, 0.22);
+}
+
+.teaser-arc--three {
+  top: 32%;
+  width: 200%;
+  aspect-ratio: 1;
+  border-color: rgba(255, 253, 248, 0.07);
+}
+
+/* Sits in the open space between the lockup and the button, where it reads as
+   a divider between the two regions rather than an underline for either. */
+.teaser-rule {
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: 30%;
+  height: 1px;
+  background-image: linear-gradient(
+    90deg,
+    rgba(211, 162, 82, 0),
+    rgba(211, 162, 82, 0.5),
+    rgba(211, 162, 82, 0)
+  );
+}
+
+/*
+  Five rows: space, lockup, space, call to action, space. The three flexible
+  tracks are what position the two groups — 1fr above the lockup, a wider
+  1.6fr between it and the button, and 0.7fr below — so the lockup settles in
+  the upper third and the button sits low with real separation, while the
+  bottom track keeps it clear of the home indicator.
+
+  Fractions rather than pixel offsets: the phone is 224px wide on a 320px
+  screen and 250px on a desktop card, and the same ratios hold at both.
+*/
+.teaser-content {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: 1fr auto 1.6fr auto 0.7fr;
+  justify-items: center;
+  align-items: center;
+  text-align: center;
+  padding: 0 1rem;
+}
+
+.teaser-lockup {
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.teaser-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background-color: rgba(255, 253, 248, 0.08);
+  border: 1px solid rgba(255, 253, 248, 0.16);
+  margin-bottom: var(--space-2);
+}
+
+/*
+  The inverse lockup, set here rather than inherited from Brand.css so the
+  teaser does not depend on another component's stylesheet being loaded.
+*/
+.teaser-brand-mark .brand-mark-plate {
+  fill: var(--ahc-surface);
+}
+
+.teaser-brand-mark .brand-mark-frame {
+  fill: var(--color-brand-strong);
+}
+
+.teaser-brand-mark .brand-mark-bar {
+  fill: var(--color-accent);
+}
+
+.teaser-name {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-text-inverse);
+  margin-bottom: 0.35rem;
+}
+
+/* 9.1:1 against the wallpaper's darkest stop. */
+.teaser-line {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--color-text-inverse-muted);
+  max-width: 18ch;
+  margin-bottom: 0;
+}
+
+/*
+  Gold on the deep navy ground: 6.6:1 for the label, and the strongest focal
+  point in the composition. Sits well inside the screen's padding, so its
+  focus ring has room to paint without meeting the bezel.
+*/
+.teaser-cta {
+  grid-row: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background-color: var(--color-accent);
+  color: var(--ahc-navy-inverse);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: 2px solid var(--color-accent);
+  transition:
+    background-color var(--motion-duration-short, 200ms) ease,
+    border-color var(--motion-duration-short, 200ms) ease;
+}
+
+.teaser-cta:hover {
+  background-color: var(--ahc-gold-soft);
+  border-color: var(--ahc-gold-soft);
+}
+
+/* The amber focus ring reads on the gold pill only once the pill recedes, so
+   focus swaps the fill for the cream surface and keeps the outline from
+   theme.css doing the rest. */
+.teaser-cta:focus-visible {
+  background-color: var(--ahc-surface);
+  border-color: var(--ahc-surface);
+  color: var(--ahc-navy-inverse);
+}
+
+/*
+  At 320px the phone is 224px wide, leaving a 206px screen. "Explore Ajani
+  Mobile" plus its padding lands within a few pixels of that, so the label
+  gets a little more room here rather than being left to wrap the pill onto
+  two lines. The 44px minimum target is untouched.
+*/
+@media screen and (max-width: 380px) {
+  .teaser-content {
+    padding: 0 0.75rem;
+  }
+
+  .teaser-mark {
+    width: 52px;
+    height: 52px;
+    border-radius: 15px;
+  }
+
+  .teaser-name {
+    font-size: 1.05rem;
+  }
+
+  .teaser-line {
+    font-size: 0.78rem;
+  }
+
+  .teaser-cta {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.78rem;
+  }
+}

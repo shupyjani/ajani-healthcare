@@ -1,6 +1,6 @@
 import React from 'react';
 import FeaturedProduct from './FeaturedProduct';
-import PlannedProduct from './PlannedProduct';
+import FieldOperationsProduct from './FieldOperationsProduct';
 import Reveal from './Reveal';
 import './Products.css';
 
@@ -20,7 +20,7 @@ function Products() {
         </Reveal>
 
         <FeaturedProduct />
-        <PlannedProduct />
+        <FieldOperationsProduct />
       </div>
     </section>
   );

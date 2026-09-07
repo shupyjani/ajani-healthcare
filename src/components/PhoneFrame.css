@@ -1,0 +1,114 @@
+/*
+  The shared iPhone frame.
+
+  Sized entirely in relative units off --phone-width, which the caller sets:
+  the homepage teaser is narrower than a case-study gallery cell. Because the
+  frame is `width: 100%` with a max-width, it shrinks to whatever column it is
+  given and can never push the page wider — which is what keeps it safe at
+  320px, where `body { overflow-x: hidden }` would otherwise hide the overflow
+  rather than reveal the bug.
+
+  The screen carries no `overflow: hidden`. That property is the usual way to
+  round a phone screen, and it is exactly what would slice the focus ring off
+  a link sitting near the screen edge. Anything that needs the screen's
+  rounding clips itself instead: an <img> by its own border-radius, the
+  teaser's wallpaper by its own overflow.
+*/
+
+.phone-frame {
+  --phone-bezel: 9px;
+  --phone-radius: 42px;
+
+  position: relative;
+  width: 100%;
+  max-width: var(--phone-width, 260px);
+  margin-inline: auto;
+  padding: var(--phone-bezel);
+  border-radius: var(--phone-radius);
+  background-image: linear-gradient(160deg, #2b4249 0%, #122b32 42%, #0b2830 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 253, 248, 0.16) inset,
+    0 18px 44px rgba(11, 40, 48, 0.28),
+    0 3px 10px rgba(11, 40, 48, 0.18);
+}
+
+.phone-frame-screen {
+  position: relative;
+  aspect-ratio: 941 / 2048;
+  border-radius: calc(var(--phone-radius) - var(--phone-bezel));
+  background-color: var(--color-bg-canvas);
+}
+
+/* Dynamic Island. Decorative furniture, never announced. */
+.phone-frame-island {
+  position: absolute;
+  top: 1.6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30%;
+  height: 2.3%;
+  min-height: 9px;
+  border-radius: 999px;
+  background-color: #0b2830;
+  z-index: 2;
+}
+
+.phone-frame-indicator {
+  position: absolute;
+  bottom: 1%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32%;
+  height: 3px;
+  border-radius: 999px;
+  background-color: rgba(11, 40, 48, 0.32);
+  z-index: 2;
+}
+
+/* Side buttons. Kept to a 2px protrusion so they never widen the layout. */
+.phone-frame-button {
+  position: absolute;
+  width: 2px;
+  border-radius: 2px;
+  background-image: linear-gradient(180deg, #35505700, #35505799, #35505700);
+}
+
+.phone-frame-button--silence {
+  left: -2px;
+  top: 15%;
+  height: 4%;
+}
+
+.phone-frame-button--up {
+  left: -2px;
+  top: 22%;
+  height: 7.5%;
+}
+
+.phone-frame-button--down {
+  left: -2px;
+  top: 31%;
+  height: 7.5%;
+}
+
+.phone-frame-button--power {
+  right: -2px;
+  top: 25%;
+  height: 11%;
+}
+
+/* A screenshot fills the screen and rounds itself, so the frame needs no
+   clipping container of its own. */
+.phone-frame-shot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-frame {
+    transition: none !important;
+  }
+}

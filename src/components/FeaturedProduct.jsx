@@ -11,23 +11,23 @@ function FeaturedProduct() {
       <h3 className="featured-product-title">Ajani Workforce</h3>
 
       <ul className="status-tags" aria-label="Product status">
-        <li className="status-tag">Pre-production preview</li>
+        <li className="status-tag">Interactive preview</li>
         <li className="status-tag">An Ajani Healthcare product</li>
       </ul>
 
       <p className="featured-product-summary">
-        Ajani Workforce is a pre-production workforce operations platform demonstrating connected
-        worker, manager and administrator journeys, including shift discovery, workforce
-        coordination, compliance visibility and timesheet oversight.
+        Ajani Workforce is a workforce operations platform connecting three journeys: Workers
+        finding and accepting shifts, Managers coordinating cover and compliance, and
+        Administrators overseeing timesheets and approvals.
       </p>
 
-      {/* The single detailed Ajani Workforce disclosure on the site. It sits
-          directly above the preview link, which is the moment it matters.
-          Stating it once is honest; repeating it in the transparency section
-          and the footer only made the product sound apologetic. Deeper
-          technical detail belongs in the product's own documentation. */}
+      {/* The single Ajani Workforce disclosure on the site. It sits directly
+          above the preview link, which is the moment it matters. Saying it
+          once is honest; the card used to qualify the product three separate
+          times over, which only made it sound apologetic. Deeper technical
+          detail belongs in the product's own documentation. */}
       <p className="featured-product-note">
-        Pre-production preview using synthetic demonstration data; not used for live
+        The public preview runs on synthetic demonstration records and is not connected to live
         healthcare operations.
       </p>
 

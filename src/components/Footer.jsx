@@ -3,7 +3,13 @@ import { Link } from 'react-router-dom';
 import SectionLink from './SectionLink';
 import Brand from './Brand';
 import { ExternalLinkIcon } from './icons';
-import { SECTION_LINKS, WORKFORCE_PREVIEW_URL, WORKFORCE_REPO_URL } from '../lib/site';
+import {
+  AJANI_MOBILE_ROUTE,
+  FIELD_OPERATIONS_REPO_URL,
+  SECTION_LINKS,
+  WORKFORCE_PREVIEW_URL,
+  WORKFORCE_REPO_URL,
+} from '../lib/site';
 import './Footer.css';
 
 /*
@@ -74,6 +80,29 @@ function Footer() {
                   rel="noopener noreferrer"
                 >
                   Public repository
+                  <ExternalLinkIcon />
+                  <span className="visually-hidden">(opens in a new tab)</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="site-footer-group">
+            <h2 className="site-footer-heading">Ajani Field Operations</h2>
+            <ul className="site-footer-list">
+              <li>
+                <Link to={AJANI_MOBILE_ROUTE} className="site-footer-link">
+                  Ajani Mobile case study
+                </Link>
+              </li>
+              <li>
+                <a
+                  className="site-footer-link external-link"
+                  href={FIELD_OPERATIONS_REPO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Native repository
                   <ExternalLinkIcon />
                   <span className="visually-hidden">(opens in a new tab)</span>
                 </a>

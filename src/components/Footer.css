@@ -6,7 +6,7 @@
 
 .site-footer-inner {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.7fr);
   gap: var(--space-5);
   align-items: start;
 }
@@ -18,9 +18,11 @@
   font-size: 0.95rem;
 }
 
+/* Three groups now. auto-fit rather than a fixed count so the row breaks on
+   its own as the footer narrows, without a breakpoint per group. */
 .site-footer-nav {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
   gap: var(--space-4);
 }
 

@@ -107,7 +107,10 @@
    in the ordinary reading ink. */
 .service-card-list {
   list-style: none;
-  margin: 0 0 var(--space-2);
+  /* Last element in every card body now, so it carries no trailing margin:
+     the body's padding is the only space beneath it, and all three cards end
+     on the same measurement. */
+  margin: 0;
   padding: 0;
   color: var(--color-text-secondary);
   font-size: 0.95rem;
@@ -118,6 +121,10 @@
   position: relative;
   padding-left: 1.35rem;
   margin-bottom: 0.45rem;
+}
+
+.service-card-list li:last-child {
+  margin-bottom: 0;
 }
 
 .service-card-list li::before {
@@ -131,18 +138,15 @@
   background-color: var(--color-brand);
 }
 
-.service-card-note {
-  margin-top: auto;
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border-soft);
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  margin-bottom: 0;
-}
-
 @media screen and (max-width: 960px) {
   .service-cards {
     grid-template-columns: 1fr;
+  }
+
+  /* One card per row, so each takes the height its own content needs rather
+     than matching a sibling it is no longer beside. */
+  .service-card {
+    height: auto;
   }
 }
 

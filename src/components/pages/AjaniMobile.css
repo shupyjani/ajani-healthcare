@@ -1,0 +1,228 @@
+/*
+  The Ajani Mobile case study.
+
+  Built from the site's existing tokens and utility classes — .container,
+  .section, .section-heading, .section-intro, .eyebrow, .btn — so the page is a
+  new arrangement of the design system rather than a second one.
+
+  Every grid here collapses to a single column before it can overflow, and the
+  phone frames are width-constrained rather than fixed, so the page holds at
+  320px where `body { overflow-x: hidden }` would otherwise conceal a break.
+*/
+
+.ajani-mobile-hero {
+  background-color: var(--color-bg-canvas);
+  padding: calc(var(--space-5) + var(--header-gap)) 0 var(--space-6);
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.ajani-mobile-title {
+  font-size: clamp(2.1rem, 5vw, 3rem);
+  margin-bottom: var(--space-2);
+}
+
+.ajani-mobile-lede {
+  max-width: 52ch;
+  font-size: 1.1rem;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.ajani-mobile-problem .section-intro {
+  margin-bottom: var(--space-2);
+}
+
+/* --- Product screens -------------------------------------------------- */
+
+.ajani-mobile-screens {
+  background-color: var(--color-bg-subtle);
+}
+
+.screen-gallery {
+  --phone-width: 280px;
+
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5) var(--space-4);
+  list-style: none;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+}
+
+.screen-gallery-item {
+  min-width: 0;
+}
+
+.screen-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.screen-caption {
+  margin-top: var(--space-3);
+  max-width: 34ch;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+}
+
+/* --- Core journey ----------------------------------------------------- */
+
+.journey-steps {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  max-width: 62ch;
+}
+
+.journey-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.journey-step:first-child {
+  border-top: 0;
+}
+
+.journey-step-index {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.journey-step-body {
+  min-width: 0;
+}
+
+.journey-step-name {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.journey-step-detail {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--color-text-secondary);
+}
+
+/* --- UX decisions ----------------------------------------------------- */
+
+.ajani-mobile-ux {
+  background-color: var(--color-bg-canvas);
+}
+
+.decision-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space-3);
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+}
+
+.decision-card {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  background-color: var(--ahc-surface);
+}
+
+.decision-card-title {
+  font-weight: 700;
+  color: var(--color-brand-strong);
+  margin-bottom: 0.35rem;
+}
+
+.decision-card-detail {
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0;
+}
+
+/* --- Engineering and accessibility ------------------------------------ */
+
+.ajani-mobile-build-inner {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.ajani-mobile-build-column {
+  min-width: 0;
+}
+
+.ajani-mobile-build-column .section-heading {
+  font-size: 1.5rem;
+}
+
+.detail-list {
+  margin: var(--space-3) 0 0;
+  padding-left: 1.1rem;
+  color: var(--color-text-secondary);
+}
+
+.detail-list li {
+  margin-bottom: var(--space-2);
+}
+
+.detail-list li::marker {
+  color: var(--color-brand);
+}
+
+/* --- Closing ---------------------------------------------------------- */
+
+.ajani-mobile-closing {
+  background-color: var(--color-bg-subtle);
+  border-top: 1px solid var(--color-border-soft);
+}
+
+/* --- Responsive ------------------------------------------------------- */
+
+@media screen and (max-width: 900px) {
+  .ajani-mobile-build-inner {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+
+  .screen-gallery {
+    --phone-width: 240px;
+
+    gap: var(--space-4) var(--space-3);
+  }
+}
+
+@media screen and (max-width: 620px) {
+  .screen-gallery {
+    --phone-width: 250px;
+
+    grid-template-columns: 1fr;
+  }
+
+  .journey-step {
+    gap: var(--space-2);
+  }
+}
+
+@media screen and (max-width: 380px) {
+  .screen-gallery {
+    --phone-width: 220px;
+  }
+}
