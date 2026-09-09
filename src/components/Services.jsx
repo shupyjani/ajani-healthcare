@@ -39,6 +39,7 @@ function Services() {
             description="Workforce and staffing support shaped around service requirements, continuity and safe care delivery, for hospitals, care homes and community services."
             items={[
               'Staffing shaped around rota and service continuity needs',
+              'Workforce planning aligned with service priorities',
               'Support for safe, consistent care delivery',
               'Responsive cover for changing service demand',
             ]}
@@ -65,11 +66,9 @@ function Services() {
             items={[
               'Healthcare workflow and service improvement',
               'Care pathways and referral routes',
-              'Product discovery and readiness assessment',
+              'Product readiness and assurance planning',
               'Accessibility and interoperability considerations',
-              'Assurance planning',
             ]}
-            note="Where formal regulatory or clinical-safety work is required, we work alongside appropriately qualified specialists."
           />
         </ul>
       </div>

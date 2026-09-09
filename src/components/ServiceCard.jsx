@@ -9,12 +9,17 @@ import Reveal from './Reveal';
  * priced tier: no price, no "most popular" treatment, no differing emphasis.
  * The body keeps the warm surface the rest of the page uses.
  *
+ * Every card carries the same structure — one paragraph and four bullets, with
+ * no per-card footer — so the three read as equals rather than one of them
+ * looking like the detailed one. The qualification that used to sit under the
+ * third card is now a note beneath the whole grid.
+ *
  * `order` is the card's position in the row, which becomes its stagger delay.
  * `index` is the number shown to the reader; it is decorative, because the
  * heading already names the service and a screen reader should not have to
  * hear "one" before it.
  */
-function ServiceCard({ title, description, items, note, Icon, index, order = 0 }) {
+function ServiceCard({ title, description, items, Icon, index, order = 0 }) {
   return (
     <Reveal as="li" className="service-card" variant="up" order={order}>
       <div className="service-card-header">
@@ -34,7 +39,6 @@ function ServiceCard({ title, description, items, note, Icon, index, order = 0 }
             ))}
           </ul>
         )}
-        {note && <p className="service-card-note">{note}</p>}
       </div>
     </Reveal>
   );

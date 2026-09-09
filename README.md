@@ -16,12 +16,13 @@ problems through workforce, operational and digital perspectives together.
 
 It also presents the company's own product work: **Ajani Workforce**, a pre-production
 platform with a public preview running on synthetic demonstration data, and **Ajani Field
-Operations**, an iOS-first planned concept with Android support considered later.
+Operations**, whose native SwiftUI iPhone application — **Ajani Mobile** — is in development
+against iOS 18 and later, with its source in a public repository.
 
-The homepage makes the Ajani Workforce pre-production and synthetic-data disclosure once,
-beside the preview link. Fuller technical detail — including the preview's authentication
-model — belongs in that product's own repository and documentation, not repeated across this
-site.
+The homepage makes the Ajani Workforce demonstration-data disclosure once, beside the preview
+link, and carries the product's stage in a single status label rather than repeating it through
+the copy. Fuller technical detail — including the preview's authentication model — belongs in
+that product's own repository and documentation, not repeated across this site.
 
 ## Status
 
@@ -94,10 +95,36 @@ Everywhere else a rule is suppressed it is suppressed on the single line it appl
 reason written next to it. No TypeScript type packages are installed: this is a JavaScript
 project.
 
+## Routes
+
+| Route | Page |
+| --- | --- |
+| `/` | Home |
+| `/contact` | Contact |
+| `/products/ajani-mobile` | The Ajani Mobile case study |
+| `/sign-up`, `/signup` | Redirect to `/contact` |
+| anything else | Not found |
+
+`/products/ajani-mobile` is the one route that is **code-split**, with `React.lazy` and a
+`Suspense` boundary in `src/App.jsx`. It is the only page carrying image assets, and the home
+page must not pay for them: splitting there keeps the case study's markup, styles and four
+screenshots out of the initial bundle and out of the home page's request graph entirely. The
+other routes are small and text-only, so splitting them would buy a round trip and save nothing.
+
+The fallback is `src/components/RouteFallback.jsx`. It renders the same
+`<main id="main-content">` landmark every route renders, so the skip link keeps its target while
+a chunk is in flight; it reserves height so the footer cannot jump when the page arrives; and it
+announces itself through `role="status"`. Nothing in it animates.
+
+`src/lib/useDocumentTitle.js` gives a route its own document title and restores the previous one
+on unmount. `index.html` still holds the title and Open Graph tags a crawler or a link preview
+sees, because those are read from the served response, before any client render.
+
 ## Deployment
 
 Built as a static site and served from `dist/`. `public/_redirects` carries the Netlify SPA
-fallback (`/*  /index.html  200`) so client-side routes resolve on a hard refresh.
+fallback (`/*  /index.html  200`) so client-side routes resolve on a hard refresh, including
+`/products/ajani-mobile`.
 
 ## Motion
 
@@ -149,10 +176,18 @@ The structural commitments this codebase holds itself to, each covered by a test
 
 Everything this site renders is HTML and text, CSS, and inline or local SVG defined in this
 repository, together with the PNG and ICO application icons generated locally from the brand
-geometry. No stock photography and no remote font asset is used.
+geometry and Ajani's own product screenshots. No stock photography and no remote font asset is
+used.
 
-- **No photography or stock imagery.** The site contains no `<img>` element at all; a test
-  enforces this on the home page.
+- **No photography or stock imagery.** The only raster images the site renders are four
+  screenshots of Ajani Mobile, Ajani's own application, in `src/assets/ajani-mobile/`.
+- **The home page stays image-free.** It contains no `<img>` element at all, and two tests
+  enforce that. Its Ajani Mobile teaser is a phone drawn in markup and CSS from the brand
+  geometry, not a picture of one.
+- **Screenshots live only on the case-study route.** They are imported by
+  `src/components/pages/AjaniMobile.jsx`, which is lazily loaded, so Vite emits them as assets
+  of that chunk and nothing requests them until someone opens `/products/ajani-mobile`. A test
+  asserts the home page carries no reference to them.
 - **No remote fonts.** Type is set in system font stacks (`--font-sans`, `--font-serif`).
 - **No CDN scripts or third-party icon packs.** The icon set in `src/components/icons.jsx` is
   drawn locally.

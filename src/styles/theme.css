@@ -320,7 +320,7 @@ button {
   .btn:active,
   .service-card:hover,
   .featured-product:hover,
-  .planned-product:hover {
+  .field-operations-product:hover {
     transform: none !important;
   }
 }

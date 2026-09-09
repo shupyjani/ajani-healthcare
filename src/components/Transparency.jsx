@@ -16,9 +16,9 @@ import './Transparency.css';
 
 const PRINCIPLES = [
   'Healthcare-led discovery, shaped around how care actually gets delivered.',
-  'Product stage and scope communicated clearly, at every step.',
+  'Product stage and scope communicated clearly.',
   'Privacy, accessibility and safety considered from the outset.',
-  'Specialist input involved wherever formal assurance is required.',
+  'Clinical, operational and engineering perspectives considered together.',
 ];
 
 function Transparency() {

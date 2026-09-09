@@ -1,0 +1,128 @@
+/*
+  Ajani Field Operations.
+
+  Full-width now, matching the Workforce panel above it, and split into two
+  columns: product copy on the left, the Ajani Mobile teaser on the right.
+  The old card was a narrow 60ch note with a dashed border — both of which read
+  as "concept", and there is a native application behind it.
+
+  Hover is depth and border weight only: no movement, and nothing here is
+  revealed by hover alone.
+*/
+
+.field-operations-product {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: center;
+  margin-top: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--ahc-surface);
+  box-shadow: 0 6px 20px rgba(11, 40, 48, 0.06);
+  transition:
+    border-color var(--motion-duration-short, 200ms) ease,
+    box-shadow var(--motion-duration-short, 200ms) ease;
+}
+
+.field-operations-product:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: 0 12px 30px rgba(11, 40, 48, 0.11);
+}
+
+.field-operations-product-copy {
+  min-width: 0;
+}
+
+.field-operations-product-title {
+  font-size: 1.7rem;
+  margin-bottom: var(--space-2);
+}
+
+/*
+  The shared .status-tag is styled for the dark featured panel, where it sits
+  on an inverse surface. On this light card it needs its own colours: teal on
+  the soft brand tint, which measures 7.9:1 and clears AA comfortably at this
+  small, bold size.
+*/
+.field-operations-product .status-tag {
+  background-color: var(--color-brand-soft);
+  border-color: rgba(13, 79, 76, 0.18);
+  color: var(--color-brand-strong);
+}
+
+.field-operations-product-summary {
+  max-width: 56ch;
+  font-size: 1.02rem;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.field-operations-product-lead {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-1);
+}
+
+/* Two columns of journeys at desktop width so the list reads as a compact
+   block beside the phone rather than a long ladder. */
+.field-operations-product-list {
+  columns: 2;
+  column-gap: var(--space-4);
+  margin: 0 0 var(--space-4);
+  padding-left: 1.1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.field-operations-product-list li {
+  margin-bottom: 0.3rem;
+  break-inside: avoid;
+}
+
+.field-operations-product-list li::marker {
+  color: var(--color-brand);
+}
+
+.field-operations-product-visual {
+  --phone-width: 250px;
+
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+@media screen and (max-width: 900px) {
+  .field-operations-product {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+
+  /* Copy first, phone beneath: the words carry the meaning, the phone
+     illustrates it. */
+  .field-operations-product-visual {
+    --phone-width: 240px;
+
+    order: 2;
+  }
+
+  .field-operations-product-copy {
+    order: 1;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .field-operations-product {
+    padding: var(--space-3);
+  }
+
+  .field-operations-product-title {
+    font-size: 1.4rem;
+  }
+
+  .field-operations-product-list {
+    columns: 1;
+  }
+}

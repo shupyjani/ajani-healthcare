@@ -1,0 +1,295 @@
+/*
+  The demonstration page.
+
+  Two columns at desktop with the phone as the focal point and a narrow
+  companion beside it; one column below 900px, phone first, so a reader on a
+  narrow screen meets the thing itself before the notes about it.
+
+  The phone is width-constrained rather than fixed, so it shrinks with its
+  column instead of pushing the page wider — which is what keeps 320px free of
+  horizontal scrolling, where `body { overflow-x: hidden }` would otherwise
+  hide the break rather than show it.
+*/
+
+.demo-page {
+  background-color: var(--color-bg-canvas);
+  padding: calc(var(--space-4) + var(--header-gap)) 0 var(--space-6);
+}
+
+.demo-page-title {
+  font-size: clamp(1.9rem, 4.4vw, 2.6rem);
+  margin-bottom: var(--space-2);
+}
+
+.demo-page-lede {
+  max-width: 54ch;
+  font-size: 1.05rem;
+  color: var(--color-text-secondary);
+  /* Trimmed from --space-5: the cue now sits in this gap rather than below
+     it, so the workspace starts no lower than it did before. */
+  margin-bottom: var(--space-4);
+}
+
+/*
+  The interaction cue.
+
+  Labelling for the workspace beneath it, not a card and not a section: an
+  eyebrow, one line, and the space the lede gave up. Its width is its own —
+  measured in characters — because it no longer sits beside the phone and has
+  nothing to line up with.
+*/
+.demo-cue {
+  grid-column: 1;
+  grid-row: 1;
+  max-width: 46ch;
+}
+
+/* The eyebrow is this region's heading, so it needs the sans face and no
+   heading margin that the element selector in theme.css would otherwise give
+   it. Nothing about how it looks changes. */
+.demo-cue h2 {
+  font-family: var(--font-sans);
+  margin: 0;
+}
+
+.demo-cue-line {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+/*
+  Two rows, and the phone spans both.
+
+    row 1   cue        │ phone
+    row 2   card       │ phone
+
+  The phone is the only thing that spans, so its height is what the two rows
+  add up to: row 1 takes the cue's height, and row 2 — the 1fr — takes whatever
+  is left. The card then stretches through row 2 on its own, which puts its
+  bottom edge on the phone's bottom edge and the cue's top edge on the phone's
+  top edge, without either being given a height of its own.
+
+  Nothing is measured, positioned or padded to make that true, and the phone's
+  own sizing rules are untouched: it still takes the width its stage gives it
+  and its height from the screen's aspect ratio.
+*/
+.demo-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto 1fr;
+  gap: var(--space-3) var(--space-5);
+  align-items: stretch;
+}
+
+/* --- Companion panel --------------------------------------------------- */
+
+.demo-companion {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  max-width: 34rem;
+  padding: var(--space-4);
+  background-color: var(--ahc-surface);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  /* So the groups inside can use the height the grid hands the card. */
+  display: flex;
+  flex-direction: column;
+}
+
+.demo-companion-title {
+  font-size: 1.15rem;
+  margin-bottom: var(--space-2);
+}
+
+.demo-try-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.demo-try-list li {
+  margin-bottom: 0.65rem;
+}
+
+.demo-try-list li:last-child {
+  margin-bottom: 0;
+}
+
+/*
+  Two weights and one colour, and no third thing.
+
+  The lead phrase is bold and teal — 9.2:1 on this card's surface, the same
+  brand ink the rest of the site uses for emphasis. Quoted interface labels and
+  the progress counts are bold in the ordinary reading colour. Nothing is
+  boxed, tinted or bordered: highlighting a word here must not make it look
+  like something to press.
+*/
+.demo-try-lead {
+  font-weight: 700;
+  color: var(--color-brand-strong);
+}
+
+.demo-try-ui,
+.demo-try-count {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.demo-try-list li::marker {
+  color: var(--color-brand);
+  font-weight: 700;
+}
+
+.demo-companion-actions {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.demo-reset-status {
+  margin: var(--space-1) 0 0;
+  min-height: 1.3rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/*
+  The two navigation links share a row wherever the card can hold them.
+
+  auto-fit against an 11rem minimum: two balanced columns once the card's
+  content box reaches about 23rem, one column below that, decided by the
+  container rather than by a breakpoint. Putting them side by side is also what
+  brings the card's bottom back level with the phone — it is a button row
+  shorter than it was, so its content once again fits the height the grid gives
+  it and the card stretches to meet the phone instead of running past it.
+
+  Both stay outline buttons, so neither competes with the filled Reset above.
+*/
+.demo-companion-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: var(--space-2);
+  /* Takes up the slack, so the card's last group meets its bottom edge. */
+  margin-top: auto;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-soft);
+}
+
+/* --- Phone stage ------------------------------------------------------- */
+
+/*
+  The phone column owns the width.
+
+  --demo-phone-width is declared here rather than on .demo-app so the height
+  cap below can set one value that the frame reads through --phone-width. The
+  frame takes it as a *definite* width capped at 100%; it must never be
+  `width: 100%`, because this stage sits in an `auto` grid track where a
+  percentage width contributes only its content's max-content size — which is
+  what collapsed the phone to its bezel.
+
+  Nothing else lives in this column. The stage's top edge is the phone's top
+  edge, which is what puts the device on the same line as the Journeys card
+  beside it.
+*/
+.demo-stage {
+  --demo-phone-width: 390px;
+
+  /* Spans both rows, so the phone's height is what they add up to. Start-
+     aligned rather than stretched, because the frame must keep the height its
+     aspect ratio gives it. */
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* Overrides the component's own default in DemoPhone.css, which stays there so
+   the phone remains self-sufficient wherever else it is used. */
+.demo-stage .demo-app {
+  --phone-width: var(--demo-phone-width, 390px);
+}
+
+
+
+/*
+  Fit the whole device on an ordinary laptop.
+
+  The frame's height is decided by its width and the screen's 941/2048 ratio,
+  so capping the width by the height that is actually available is what keeps
+  the bottom of the phone on screen — no transform, no zoom assumption.
+
+  The reserved height is the sticky header this site already measures once
+  (--scroll-offset, 77px) plus --space-5 of clearance. The 18px is the bezel
+  the frame adds on each axis, which sits outside the aspect ratio.
+
+  Applied at the two-column breakpoint only: below it the page is expected to
+  scroll, and a short phone there would be smaller than it needs to be.
+*/
+@media screen and (min-width: 901px) {
+  /* The card has a defined height here, so the list uses a little of it. */
+  .demo-try-list li {
+    margin-bottom: 0.85rem;
+  }
+
+  .demo-stage {
+    --demo-reserved: calc(var(--scroll-offset) + var(--space-5));
+    --demo-height-fit: calc((100vh - var(--demo-reserved) - 18px) * 941 / 2048 + 18px);
+    --demo-height-fit: calc((100dvh - var(--demo-reserved) - 18px) * 941 / 2048 + 18px);
+
+    /*
+      Never above the 390px the design calls for, and never below 260px, where
+      the interface stops being comfortable to operate. The floor bites only
+      under about a 660px-tall viewport; below that the page scrolls, which is
+      the honest fallback — shrinking further would trade one problem for a
+      worse one.
+    */
+    --demo-phone-width: clamp(260px, var(--demo-height-fit), 390px);
+  }
+}
+
+@media screen and (max-width: 900px) {
+  /*
+    One column, in source order: cue, phone, card. Every placement is dropped
+    so each row takes the height its own content needs — nothing is stretched
+    to match anything else here.
+  */
+  .demo-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    gap: var(--space-4);
+  }
+
+  .demo-cue,
+  .demo-stage,
+  .demo-companion {
+    grid-column: auto;
+    grid-row: auto;
+    align-self: auto;
+  }
+
+  .demo-companion {
+    max-width: none;
+  }
+
+  .demo-companion-links {
+    margin-top: var(--space-3);
+  }
+}
+
+@media screen and (max-width: 420px) {
+  .demo-companion {
+    padding: var(--space-3);
+  }
+
+  /* No --phone-width override is needed here: max-width: 100% on the frame
+     already lets it take the column when the column is the narrower of the
+     two. Setting it to a percentage would reintroduce the collapse this
+     stylesheet's grid caused, by making the frame's width parent-derived
+     again. */
+}

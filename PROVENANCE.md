@@ -32,6 +32,25 @@ The following were implemented directly for this clean repository rather than ca
 - the hero diagram;
 - the test suite and the lint configuration.
 
+## Product screenshots
+
+`src/assets/ajani-mobile/` holds four screenshots of **Ajani Mobile**, the native SwiftUI iPhone
+application for Ajani Field Operations:
+
+- `ajani-mobile-today-light.png`
+- `ajani-mobile-visits-dark.png`
+- `ajani-mobile-visit-detail-light.png`
+- `ajani-mobile-more-dark.png`
+
+These are original captures of Ajani's own application, taken from it running on iPhone. They
+are not mockups, stock imagery, template screens or renderings of third-party software, and no
+third-party artwork appears in them. The interface they show is Ajani's own design, built in the
+public repository at https://github.com/shupyjani/field-operations-ios, and the records visible
+in them are demonstration data rather than any real person's information.
+
+They are the only raster images the site renders other than the generated application icons, and
+they appear on the `/products/ajani-mobile` case study alone.
+
 ## Brand assets
 
 The Ajani brand mark is defined as geometry maintained in this repository

@@ -1,0 +1,20 @@
+/*
+  Holds the page's height while a lazy route chunk loads, so the footer does
+  not jump when the real page arrives. 60vh is comfortably taller than the
+  header plus this message and shorter than any real route, which means the
+  swap only ever grows the page downwards, never rearranges what is on screen.
+*/
+
+.route-fallback {
+  display: flex;
+  align-items: flex-start;
+  min-height: 60vh;
+  padding: calc(var(--space-6) + var(--header-gap)) 0 var(--space-6);
+  background-color: var(--color-bg-page);
+}
+
+.route-fallback-message {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  margin-bottom: 0;
+}

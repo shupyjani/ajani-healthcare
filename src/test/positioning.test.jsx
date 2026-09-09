@@ -36,8 +36,24 @@ describe('three connected capabilities', () => {
     for (const card of cards) {
       expect(card.querySelectorAll('h3')).toHaveLength(1);
       expect(card.querySelector('.service-card-description')).toBeInTheDocument();
-      expect(card.querySelectorAll('.service-card-list li').length).toBeGreaterThan(2);
+      /* Exactly four, in every card. Unequal bullet counts were what made one
+         capability look like the detailed one and the others like summaries. */
+      expect(card.querySelectorAll('.service-card-list li')).toHaveLength(4);
     }
+  });
+
+  it('gives all three the same structure: one paragraph, four bullets, no footer', () => {
+    renderApp('/');
+
+    for (const card of document.querySelectorAll('.service-card')) {
+      expect(card.querySelectorAll('.service-card-description')).toHaveLength(1);
+      expect(card.querySelectorAll('.service-card-list')).toHaveLength(1);
+      /* No per-card footer: the qualification that used to sit under the third
+         card is a section note now, so no card carries one. */
+      expect(card.querySelector('.service-card-note')).toBeNull();
+    }
+
+    expect(document.querySelectorAll('.service-card-note')).toHaveLength(0);
   });
 
   it('does not let staffing crowd out the other two', () => {
@@ -45,11 +61,13 @@ describe('three connected capabilities', () => {
 
     const [workforce, digital, operations] = document.querySelectorAll('.service-card');
 
-    /* Comparable substance in each card: none is a stub beside a headline
-       offer. Workforce has the fewest bullets, so it sets the floor. */
+    /* Equal substance in each card, not merely comparable: the three
+       capabilities are presented on equal footing, so they carry the same
+       number of bullets as well as the same card. */
     const bullets = (card) => card.querySelectorAll('.service-card-list li').length;
-    expect(bullets(digital)).toBeGreaterThanOrEqual(bullets(workforce));
-    expect(bullets(operations)).toBeGreaterThanOrEqual(bullets(workforce));
+    expect(bullets(workforce)).toBe(4);
+    expect(bullets(digital)).toBe(bullets(workforce));
+    expect(bullets(operations)).toBe(bullets(workforce));
 
     /* Staffing is not the first thing the page says about itself. */
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
@@ -87,21 +105,31 @@ describe('digital and UX capability is explicit', () => {
 
     const operations = document.querySelectorAll('.service-card')[2];
 
-    expect(within(operations).getByText(/Healthcare workflow and service improvement/i)).toBeInTheDocument();
-    expect(within(operations).getByText(/Care pathways and referral routes/i)).toBeInTheDocument();
-    expect(within(operations).getByText(/Accessibility and interoperability/i)).toBeInTheDocument();
-    expect(within(operations).getByText(/Assurance planning/i)).toBeInTheDocument();
+    const bullets = [...operations.querySelectorAll('.service-card-list li')].map(
+      (item) => item.textContent,
+    );
+
+    /* Discovery/readiness and assurance planning are one bullet now. Asserted
+       exactly, so a loose substring match cannot quietly pass on the combined
+       wording. */
+    expect(bullets).toEqual([
+      'Healthcare workflow and service improvement',
+      'Care pathways and referral routes',
+      'Product readiness and assurance planning',
+      'Accessibility and interoperability considerations',
+    ]);
     expect(operations).toHaveTextContent(/NHS and UK care settings/i);
   });
 
-  it('frames the specialist boundary positively and only once', () => {
+  it('makes no claim that would need a specialist qualification', () => {
     renderApp('/');
 
-    const matches = screen.getAllByText(/alongside appropriately qualified specialists/i);
-    expect(matches).toHaveLength(1);
-
-    /* No claim to provide the formal work itself. */
+    /* The section never claims to provide regulatory sign-off or
+       clinical-safety certification, so it carries no sentence saying it does
+       not. Qualifying an unmade claim only introduces doubt. */
     expect(document.body).not.toHaveTextContent(/we provide (regulatory|clinical-safety|legal)/i);
+    expect(document.body).not.toHaveTextContent(/appropriately qualified specialists/i);
+    expect(document.querySelector('.services-note')).toBeNull();
   });
 });
 
@@ -132,7 +160,7 @@ describe('Ajani Workforce disclosure appears once', () => {
     const statuses = screen.getByRole('list', { name: 'Product status' });
     const labels = within(statuses).getAllByRole('listitem').map((li) => li.textContent);
 
-    expect(labels).toEqual(['Pre-production preview', 'An Ajani Healthcare product']);
+    expect(labels).toEqual(['Interactive preview', 'An Ajani Healthcare product']);
   });
 
   it('makes the synthetic-data disclosure exactly once, next to the preview link', () => {
@@ -141,7 +169,7 @@ describe('Ajani Workforce disclosure appears once', () => {
     const disclosures = screen.getAllByText(/synthetic/i);
     expect(disclosures).toHaveLength(1);
     expect(disclosures[0]).toHaveTextContent(
-      /Pre-production preview using synthetic demonstration data; not used for live healthcare operations\./i,
+      /The public preview runs on synthetic demonstration records and is not connected to live healthcare operations\./i,
     );
 
     /* Close to the link it qualifies, not stranded elsewhere on the page. */
@@ -165,12 +193,20 @@ describe('Ajani Workforce disclosure appears once', () => {
     expect(footer).toHaveTextContent(/Ajani Healthcare\. All rights reserved\./i);
   });
 
-  it('still states the Field Operations product stage on its own card', () => {
+  it('labels Field Operations by what it is, not by a stage it has reached', () => {
     renderApp('/');
 
-    const planned = document.querySelector('.planned-product');
-    expect(planned).toHaveTextContent(/Planned concept/i);
-    expect(planned).toHaveTextContent(/not a released or downloadable application/i);
+    const card = document.querySelector('.field-operations-product');
+    expect(within(card).getAllByText('Native product')).toHaveLength(1);
+
+    /* The repository link is what makes this card's claims checkable, so it
+       does not also qualify the product. No stage wording, in either
+       direction: neither an apology nor an unsupported release claim. */
+    expect(card).not.toHaveTextContent(/In development/i);
+    expect(card).not.toHaveTextContent(/Planned concept/i);
+    expect(card).not.toHaveTextContent(/not a released or downloadable application/i);
+    expect(card).not.toHaveTextContent(/synthetic/i);
+    expect(card).not.toHaveTextContent(/\breleased\b|\bproduction\b|App Store/i);
   });
 });
 
@@ -195,10 +231,39 @@ describe('transparency section reads as practice, not disclaimer', () => {
     const items = within(transparency).getAllByRole('listitem');
 
     expect(items).toHaveLength(4);
-    expect(transparency).toHaveTextContent(/Healthcare-led discovery/i);
-    expect(transparency).toHaveTextContent(/Product stage and scope communicated clearly/i);
-    expect(transparency).toHaveTextContent(/Privacy, accessibility and safety/i);
-    expect(transparency).toHaveTextContent(/Specialist input involved wherever formal assurance/i);
+    /* Asserted as exact, whole strings: a substring match would have let the
+       revised wording pass while the old text was still there. */
+    expect(items.map((item) => item.textContent)).toEqual([
+      'Healthcare-led discovery, shaped around how care actually gets delivered.',
+      'Product stage and scope communicated clearly.',
+      'Privacy, accessibility and safety considered from the outset.',
+      'Clinical, operational and engineering perspectives considered together.',
+    ]);
+  });
+
+  it('has dropped the two qualifying principles it used to carry', () => {
+    renderApp('/');
+
+    const transparency = document.getElementById('transparency');
+
+    /* "at every step" was a promise to qualify; "specialist input ... formal
+       assurance" restated the boundary the Services note used to carry. Both
+       qualified claims the site does not make. */
+    expect(transparency).not.toHaveTextContent(/at every step/i);
+    expect(transparency).not.toHaveTextContent(/Specialist input/i);
+    expect(transparency).not.toHaveTextContent(/formal assurance/i);
+    expect(document.body).not.toHaveTextContent(/formal assurance/i);
+  });
+
+  it('states each revised principle exactly once on the page', () => {
+    renderApp('/');
+
+    for (const principle of [
+      'Product stage and scope communicated clearly.',
+      'Clinical, operational and engineering perspectives considered together.',
+    ]) {
+      expect(screen.getAllByText(principle)).toHaveLength(1);
+    }
   });
 
   it('carries no product disclaimer and no unsupported claim', () => {
