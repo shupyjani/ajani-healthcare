@@ -1,0 +1,864 @@
+/*
+  The simulated Ajani Mobile interface.
+
+  Its own token set, scoped to .demo-app, because the phone interior is a
+  different surface from the website around it: it has to carry the app's ivory
+  and teal light appearance and its near-black and teal dark appearance, while
+  the site itself stays light. The tokens are redefined under
+  prefers-color-scheme so the phone follows the reader's system setting, which
+  is what the native application does.
+
+  Contrast measured against the surface each colour actually sits on:
+    light  #0b2830 on #fffdf8 = 15.9:1   #5b6d70 on #fffdf8 =  5.3:1
+           #14532d on #d7ede0 =  7.4:1   #0d4f4c on #d9e9e5 =  8.0:1
+    dark   #f5f4f1 on #17181a = 16.4:1   #a9aeae on #17181a =  7.9:1
+           #56d98a on #123322 =  7.7:1   #5fd8c7 on #17181a = 10.3:1
+
+  Nothing here animates on a layout property and nothing loops.
+*/
+
+.demo-app {
+  --d-bg: #f6f2ea;
+  --d-card: #fffdf8;
+  --d-border: rgba(11, 40, 48, 0.1);
+  --d-border-strong: rgba(11, 40, 48, 0.18);
+  --d-text: #0b2830;
+  --d-text-2: #5b6d70;
+  --d-accent: #0d4f4c;
+  --d-accent-ink: #fffdf8;
+  --d-accent-soft: #d9e9e5;
+  --d-green: #14532d;
+  --d-green-soft: #d7ede0;
+  --d-gold: #8a5a12;
+  --d-gold-soft: #f4e5c5;
+  --d-focus: #bd7617;
+  --d-bar: rgba(255, 253, 248, 0.94);
+  --d-scrim: rgba(11, 40, 48, 0.45);
+
+  --phone-width: 390px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .demo-app {
+    --d-bg: #0a0a0b;
+    --d-card: #17181a;
+    --d-border: rgba(255, 253, 248, 0.12);
+    --d-border-strong: rgba(255, 253, 248, 0.24);
+    --d-text: #f5f4f1;
+    --d-text-2: #a9aeae;
+    --d-accent: #5fd8c7;
+    --d-accent-ink: #06231f;
+    --d-accent-soft: #10312f;
+    --d-green: #56d98a;
+    --d-green-soft: #123322;
+    --d-gold: #e5b45f;
+    --d-gold-soft: #3a2c12;
+    --d-focus: #f0b357;
+    --d-bar: rgba(23, 24, 26, 0.94);
+    --d-scrim: rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* --- Screen shell ------------------------------------------------------ */
+
+.demo-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: inherit;
+  overflow: hidden;
+  background-color: var(--d-bg);
+  color: var(--d-text);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+/*
+  The app scrolls inside the phone, which means this box clips. Focus rings are
+  therefore drawn *inside* the control rather than outside it: an outline at the
+  default +2px offset would be sliced off anything near the edge of a scrolling
+  container. Inset, it is never clipped and still reads at 3px.
+*/
+.demo-app :focus-visible {
+  outline: 3px solid var(--d-focus);
+  outline-offset: -3px;
+  border-radius: var(--radius-sm);
+}
+
+.demo-screen-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /*
+    Reserve the scrollbar's space whether or not it is showing.
+
+    Without this the content box loses ~15px the moment the list is long
+    enough to overflow, and gets it back as soon as a search shortens the
+    list — so the same controls were laid out against two different widths
+    depending on how many visits matched.
+  */
+  scrollbar-gutter: stable;
+  /* Top padding clears the Dynamic Island the frame draws over the screen. */
+  padding: 2.6rem 0.85rem 0.85rem;
+}
+
+/* The measuring stick for the filter row's type, so it scales with the phone
+   rather than with the page. */
+.demo-screen-body {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.demo-screen-title {
+  font-family: var(--font-sans);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--d-text);
+  margin: 0 0 0.1rem;
+}
+
+.demo-screen-title--detail {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+/* --- Cards ------------------------------------------------------------- */
+
+.demo-card {
+  background-color: var(--d-card);
+  border: 1px solid var(--d-border);
+  border-radius: 14px;
+  padding: 0.85rem;
+}
+
+.demo-card--done {
+  border-style: dashed;
+}
+
+.demo-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.demo-section-title {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--d-text);
+  margin: 0;
+}
+
+.demo-section-meta {
+  font-size: 0.78rem;
+  color: var(--d-text-2);
+}
+
+/* --- Shift summary ----------------------------------------------------- */
+
+.demo-shift-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.demo-shift-greeting {
+  font-family: var(--font-sans);
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--d-text);
+  margin: 0;
+}
+
+.demo-shift-date {
+  font-size: 0.82rem;
+  color: var(--d-text-2);
+  margin: 0.1rem 0 0;
+}
+
+.demo-avatar {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: var(--d-accent-soft);
+  color: var(--d-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.demo-avatar--large {
+  width: 46px;
+  height: 46px;
+  font-size: 0.92rem;
+}
+
+.demo-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--d-border);
+}
+
+.demo-metric dt,
+.demo-detail-row dt {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--d-text-2);
+}
+
+.demo-metric dt svg,
+.demo-detail-row dt svg {
+  color: var(--d-accent);
+}
+
+.demo-metric dd,
+.demo-detail-row dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--d-text);
+}
+
+.demo-progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.demo-progress-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.demo-progress-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--d-accent);
+}
+
+.demo-progress-track {
+  height: 8px;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  background-color: var(--d-accent-soft);
+  overflow: hidden;
+}
+
+.demo-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background-color: var(--d-accent);
+}
+
+.demo-progress-count {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: var(--d-text-2);
+}
+
+/* --- Current visit ----------------------------------------------------- */
+
+.demo-current-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.demo-current-label {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--d-accent);
+}
+
+.demo-current-name {
+  font-family: var(--font-sans);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--d-text);
+  margin: 0 0 0.15rem;
+}
+
+.demo-current-type {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: var(--d-text-2);
+}
+
+.demo-tag-priority {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background-color: var(--d-gold-soft);
+  color: var(--d-gold);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.demo-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+/* --- Status badges ----------------------------------------------------- */
+
+/* Word, shape and colour together — never colour alone. */
+.demo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  flex-shrink: 0;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.demo-badge--completed {
+  background-color: var(--d-green-soft);
+  color: var(--d-green);
+}
+
+.demo-badge--arrived {
+  background-color: var(--d-accent-soft);
+  color: var(--d-accent);
+}
+
+.demo-badge--en-route {
+  background-color: var(--d-gold-soft);
+  color: var(--d-gold);
+}
+
+.demo-badge--planned {
+  background-color: transparent;
+  border: 1px solid var(--d-border-strong);
+  color: var(--d-text-2);
+}
+
+.demo-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid currentcolor;
+}
+
+/* --- Visit rows -------------------------------------------------------- */
+
+.demo-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.demo-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.7rem;
+  border: 1px solid var(--d-border);
+  border-radius: 14px;
+  background-color: var(--d-card);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-duration-short, 200ms) ease,
+    background-color var(--motion-duration-short, 200ms) ease;
+}
+
+.demo-row:hover {
+  border-color: var(--d-border-strong);
+}
+
+.demo-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.demo-row-time {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--d-text-2);
+}
+
+.demo-row-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--d-text);
+}
+
+.demo-row-type {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--d-text-2);
+}
+
+.demo-row-address {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--d-text-2);
+}
+
+.demo-row-address svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.demo-row-item {
+  list-style: none;
+}
+
+/* --- Search and filters ------------------------------------------------ */
+
+.demo-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.demo-search-glyph {
+  position: absolute;
+  left: 0.65rem;
+  display: inline-flex;
+  color: var(--d-text-2);
+  pointer-events: none;
+}
+
+.demo-search-field {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.7rem 0.5rem 2.1rem;
+  border: 1px solid var(--d-border);
+  border-radius: 12px;
+  background-color: var(--d-card);
+  color: var(--d-text);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.demo-search-field::placeholder {
+  color: var(--d-text-2);
+}
+
+/*
+  Four tracks, one row, always.
+
+  This used to be a wrapping flex row whose four pills came within about two
+  pixels of the available width — so the scrollbar appearing was enough to push
+  "Completed" onto a second line, and a search that removed the scrollbar
+  pulled it back up. Wrapping is now impossible rather than merely unlikely:
+  the tracks are fixed at four. Content-sized tracks give the longer labels
+  room without forcing the short "All" label to take an equal share.
+*/
+.demo-filters {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  justify-content: stretch;
+  gap: 0.075rem;
+}
+
+.demo-filter {
+  min-width: 0;
+  min-height: 44px;
+  /* Tighter than a general control, because four of them share one row. */
+  padding: 0.3rem clamp(0.025rem, 0.1cqi, 0.15rem);
+  border: 1px solid var(--d-border);
+  border-radius: 999px;
+  background-color: var(--d-card);
+  color: var(--d-text-2);
+  font: inherit;
+  /* Keep the readable floor even at the narrowest phone width. Spacing,
+     rather than smaller type, accommodates the four complete labels. */
+  font-size: 0.7rem;
+  font-size: clamp(0.7rem, 3cqi, 0.8rem);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-short, 200ms) ease,
+    border-color var(--motion-duration-short, 200ms) ease,
+    color var(--motion-duration-short, 200ms) ease;
+}
+
+/* Selected state is weight and fill, not hue alone. */
+.demo-filter.is-active {
+  background-color: var(--d-accent);
+  border-color: var(--d-accent);
+  color: var(--d-accent-ink);
+  font-weight: 700;
+}
+
+.demo-result-count {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--d-text-2);
+}
+
+.demo-empty {
+  padding: 1.2rem 0.85rem;
+  border: 1px dashed var(--d-border-strong);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.demo-empty-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.demo-empty-detail {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--d-text-2);
+}
+
+/* --- Detail ------------------------------------------------------------ */
+
+.demo-detail-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.demo-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--d-border);
+  border-radius: 50%;
+  background-color: var(--d-card);
+  color: var(--d-text);
+  cursor: pointer;
+  transition: border-color var(--motion-duration-short, 200ms) ease;
+}
+
+.demo-back:hover {
+  border-color: var(--d-border-strong);
+}
+
+.demo-tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.demo-task {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.15rem 0.55rem;
+  align-items: start;
+  padding: 0.55rem;
+  border-radius: 10px;
+  background-color: var(--d-bg);
+}
+
+.demo-task-check {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--d-accent);
+  cursor: pointer;
+}
+
+.demo-task-label {
+  font-size: 0.85rem;
+  color: var(--d-text);
+  cursor: pointer;
+  /* A 44px target without a 44px box: the row's padding plus the label's own
+     line box give the pointer somewhere to land. */
+  padding: 0.35rem 0;
+}
+
+/* Done is a tick, a strike and a fade together. */
+.demo-task-check:checked + .demo-task-label {
+  color: var(--d-text-2);
+  text-decoration: line-through;
+}
+
+.demo-task-hint {
+  grid-column: 2;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--d-text-2);
+}
+
+.demo-notes {
+  margin: 0;
+  padding-left: 1.05rem;
+  font-size: 0.83rem;
+  color: var(--d-text-2);
+}
+
+.demo-notes li {
+  margin-bottom: 0.3rem;
+}
+
+.demo-notes li::marker {
+  color: var(--d-gold);
+}
+
+.demo-step-note,
+.demo-complete-note {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--d-text-2);
+  text-align: center;
+}
+
+/* --- Buttons ----------------------------------------------------------- */
+
+.demo-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.demo-actions--stacked {
+  flex-direction: column;
+}
+
+.demo-button {
+  flex: 1;
+  min-height: 44px;
+  padding: 0.55rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-short, 200ms) ease,
+    border-color var(--motion-duration-short, 200ms) ease,
+    color var(--motion-duration-short, 200ms) ease;
+}
+
+.demo-button--primary {
+  background-color: var(--d-accent);
+  border-color: var(--d-accent);
+  color: var(--d-accent-ink);
+}
+
+.demo-button--quiet {
+  background-color: transparent;
+  border-color: var(--d-border-strong);
+  color: var(--d-text);
+}
+
+.demo-button--quiet:hover {
+  border-color: var(--d-accent);
+  color: var(--d-accent);
+}
+
+/* --- Preferences ------------------------------------------------------- */
+
+.demo-preferences {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.demo-preference {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.15rem 0.6rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--d-border);
+}
+
+.demo-preference:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.demo-preference-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--d-text);
+  cursor: pointer;
+}
+
+.demo-preference-hint {
+  grid-column: 1;
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--d-text-2);
+}
+
+.demo-switch {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  accent-color: var(--d-accent);
+  cursor: pointer;
+}
+
+.demo-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.7rem;
+  border-bottom: 1px solid var(--d-border);
+}
+
+.demo-profile-name {
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--d-text);
+  margin: 0;
+}
+
+.demo-profile-role {
+  margin: 0.1rem 0 0;
+  font-size: 0.8rem;
+  color: var(--d-text-2);
+}
+
+/* --- Tab bar ----------------------------------------------------------- */
+
+.demo-tabbar {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.25rem;
+  padding: 0.35rem 0.5rem 1.1rem;
+  background-color: var(--d-bar);
+  border-top: 1px solid var(--d-border);
+}
+
+.demo-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  min-height: 44px;
+  padding: 0.35rem 0.2rem;
+  border: 0;
+  border-radius: 12px;
+  background-color: transparent;
+  color: var(--d-text-2);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-short, 200ms) ease,
+    color var(--motion-duration-short, 200ms) ease;
+}
+
+/* Selected is fill plus weight as well as colour. */
+.demo-tab.is-selected {
+  background-color: var(--d-accent-soft);
+  color: var(--d-accent);
+  font-weight: 700;
+}
+
+/* --- Confirmation dialog ----------------------------------------------- */
+
+.demo-dialog-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.demo-dialog-scrim {
+  position: absolute;
+  inset: 0;
+  background-color: var(--d-scrim);
+}
+
+.demo-dialog {
+  position: relative;
+  width: 100%;
+  padding: 1rem;
+  border-radius: 16px;
+  background-color: var(--d-card);
+  border: 1px solid var(--d-border-strong);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.demo-dialog-title {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--d-text);
+  margin: 0 0 0.35rem;
+}
+
+.demo-dialog-body {
+  margin: 0 0 0.9rem;
+  font-size: 0.83rem;
+  color: var(--d-text-2);
+}
+
+.demo-dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* --- Reduced motion ---------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-row,
+  .demo-filter,
+  .demo-button,
+  .demo-back,
+  .demo-tab {
+    transition: none !important;
+  }
+}

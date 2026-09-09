@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom';
 import PhoneFrame from '../PhoneFrame';
 import Reveal from '../Reveal';
 import { ExternalLinkIcon } from '../icons';
-import { AJANI_MOBILE_ROUTE, FIELD_OPERATIONS_REPO_URL } from '../../lib/site';
+import {
+  AJANI_MOBILE_DEMO_ROUTE,
+  AJANI_MOBILE_ROUTE,
+  FIELD_OPERATIONS_REPO_URL,
+} from '../../lib/site';
 import { useDocumentTitle } from '../../lib/useDocumentTitle';
 import todayLight from '../../assets/ajani-mobile/ajani-mobile-today-light.png';
 import visitsDark from '../../assets/ajani-mobile/ajani-mobile-visits-dark.png';
@@ -171,7 +175,10 @@ function AjaniMobile() {
           </Reveal>
 
           <Reveal className="btn-row" variant="up" order={3}>
-            <Link className="btn btn--primary" to={`${AJANI_MOBILE_ROUTE}#product-screens`}>
+            <Link className="btn btn--primary" to={AJANI_MOBILE_DEMO_ROUTE}>
+              Try the interactive demo
+            </Link>
+            <Link className="btn btn--outline" to={`${AJANI_MOBILE_ROUTE}#product-screens`}>
               View the product screens
             </Link>
             <a
@@ -351,8 +358,11 @@ function AjaniMobile() {
             SwiftUI views and the test suite described above.
           </Reveal>
           <Reveal className="btn-row" variant="up" order={2}>
+            <Link className="btn btn--primary" to={AJANI_MOBILE_DEMO_ROUTE}>
+              Try the interactive demo
+            </Link>
             <a
-              className="btn btn--primary external-link"
+              className="btn btn--outline external-link"
               href={FIELD_OPERATIONS_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"

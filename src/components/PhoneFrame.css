@@ -1,12 +1,19 @@
 /*
   The shared iPhone frame.
 
-  Sized entirely in relative units off --phone-width, which the caller sets:
-  the homepage teaser is narrower than a case-study gallery cell. Because the
-  frame is `width: 100%` with a max-width, it shrinks to whatever column it is
-  given and can never push the page wider — which is what keeps it safe at
-  320px, where `body { overflow-x: hidden }` would otherwise hide the overflow
-  rather than reveal the bug.
+  Sized off --phone-width, which the caller sets: the homepage teaser is
+  narrower than a case-study gallery cell, which is narrower than the demo.
+
+  That width is the frame's *own* width, capped at 100% of whatever column it
+  is given — deliberately that way round, and not `width: 100%` with a
+  max-width. Everything inside the screen is absolutely positioned, so the
+  frame has no in-flow content and its max-content width is only its padding.
+  A frame whose width came from its parent therefore collapsed to ~18px in any
+  `auto`-sized grid track, taking its aspect-ratio height to nothing with it.
+  Declaring the width intrinsically means the track has a real contribution to
+  size itself from, in an `auto` track and an `fr` track alike, while
+  max-width: 100% still stops it pushing the page wider at 320px — where
+  `body { overflow-x: hidden }` would hide the overflow rather than reveal it.
 
   The screen carries no `overflow: hidden`. That property is the usual way to
   round a phone screen, and it is exactly what would slice the focus ring off
@@ -20,8 +27,8 @@
   --phone-radius: 42px;
 
   position: relative;
-  width: 100%;
-  max-width: var(--phone-width, 260px);
+  width: var(--phone-width, 260px);
+  max-width: 100%;
   margin-inline: auto;
   padding: var(--phone-bezel);
   border-radius: var(--phone-radius);

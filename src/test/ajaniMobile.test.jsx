@@ -213,9 +213,12 @@ describe('what the case study does not claim', () => {
     expect(main).toHaveTextContent(/native SwiftUI iPhone application/i);
     expect(main).toHaveTextContent(/Captured from Ajani Mobile running on iPhone/i);
 
-    /* No browser demonstration exists yet, so the page must not imply one. */
-    expect(main).not.toHaveTextContent(/interactive demo|try it in your browser|run it here/i);
-    expect(main).not.toHaveTextContent(/coming soon/i);
+    /* The demo is now offered, so the page may name it — but it must never
+       suggest the native application itself runs in a browser, and it must
+       not defer anything to a future that has not happened. */
+    expect(main).not.toHaveTextContent(/coming soon|not yet available/i);
+    expect(main).not.toHaveTextContent(/run the (native|iPhone) app in your browser/i);
+    expect(main).not.toHaveTextContent(/this is not the real app|prototype|mock-?up/i);
   });
 
   it('renders no control that does nothing', async () => {
@@ -360,11 +363,70 @@ describe("the new stylesheets keep the site's motion rules", () => {
     }
   });
 
-  it('sizes every phone against a max-width, never a fixed width', () => {
+  /*
+   * Regression guard for the collapsed-phone bug.
+   *
+   * Everything inside .phone-frame-screen is absolutely positioned, so the
+   * frame has no in-flow content and its max-content width is only its
+   * padding. While the frame took its width from its parent
+   * (`width: 100%; max-width: var(--phone-width)`) that was invisible in an
+   * `fr` track and fatal in an `auto` one: the demo page's
+   * `minmax(0, 1fr) auto` sized the track to ~18px and aspect-ratio collapsed
+   * the height with it.
+   *
+   * The invariant that fixes it is cheap to state and would have caught the
+   * bug: the frame's width must be intrinsic, and only its cap may be a
+   * percentage. Asserted on the stylesheet rather than on a rendered pixel,
+   * because jsdom performs no layout and a pixel test here would be fiction.
+   */
+  it('gives the phone an intrinsic width so an auto-sized track cannot collapse it', () => {
     const [, phoneCss] = sheets[0];
     const frameRule = /\.phone-frame\s*\{([^}]*)\}/.exec(phoneCss);
-    expect(frameRule[1]).toMatch(/width:\s*100%/);
-    expect(frameRule[1]).toMatch(/max-width:\s*var\(--phone-width/);
+
+    expect(frameRule).not.toBeNull();
+    expect(frameRule[1]).toMatch(/width:\s*var\(--phone-width/);
+    expect(frameRule[1]).toMatch(/max-width:\s*100%/);
+
+    /* The old, collapsing arrangement must not come back. */
+    expect(frameRule[1]).not.toMatch(/(?<!max-)width:\s*100%/);
+    expect(frameRule[1]).not.toMatch(/max-width:\s*var\(--phone-width/);
+  });
+
+  it('never sets a phone width to a percentage, which would undo that', () => {
+    const declarations = [
+      'src/components/PhoneFrame.css',
+      'src/components/AjaniMobileTeaser.css',
+      'src/components/FieldOperationsProduct.css',
+      'src/components/pages/AjaniMobile.css',
+      'src/components/pages/AjaniMobileDemo.css',
+      'src/components/demo/DemoPhone.css',
+    ].flatMap((path) => {
+      const css = readFileSync(path, 'utf8');
+      /* Both the frame's own property and the demo page's shared one: the
+         frame reads the second through the first, so a percentage in either
+         reaches the same place. */
+      return [...css.matchAll(/--(?:demo-)?phone-width:\s*([^;]+);/g)].map((match) => [
+        path,
+        match[1].trim(),
+      ]);
+    });
+
+    expect(declarations.length).toBeGreaterThan(0);
+    for (const [path, value] of declarations) {
+      /*
+       * A percentage makes the width parent-derived again, which is exactly
+       * what collapsed the phone to its bezel in an auto grid track. Lengths,
+       * viewport units and clamps of those are all definite and all fine —
+       * only a percentage is not.
+       */
+      expect(`${path}: ${value}`).not.toMatch(/%/);
+    }
+  });
+
+  it("keeps the screen's aspect ratio, which is what gives the frame height", () => {
+    const [, phoneCss] = sheets[0];
+    const screenRule = /\.phone-frame-screen\s*\{([^}]*)\}/.exec(phoneCss);
+    expect(screenRule[1]).toMatch(/aspect-ratio:\s*941\s*\/\s*2048/);
   });
 });
 

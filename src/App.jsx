@@ -9,7 +9,7 @@ import RouteFallback from './components/RouteFallback';
 import Home from './components/pages/Home';
 import Contact from './components/pages/Contact';
 import NotFound from './components/pages/NotFound';
-import { AJANI_MOBILE_ROUTE } from './lib/site';
+import { AJANI_MOBILE_DEMO_ROUTE, AJANI_MOBILE_ROUTE } from './lib/site';
 
 /*
  * Application shell.
@@ -24,14 +24,16 @@ import { AJANI_MOBILE_ROUTE } from './lib/site';
  * takes a fragment to its section. Exactly one of them acts on any given
  * navigation.
  *
- * The Ajani Mobile case study is the one route that is code-split. It is the
- * only page carrying image assets, and the home page must not pay for them:
- * splitting here keeps the case study's markup, styles and four screenshots
- * out of the initial bundle and out of the home page's request graph entirely.
- * The other routes are small and text-only, so splitting them would buy a
+ * Two routes are code-split, both under /products/ajani-mobile. The case study
+ * is the only page carrying image assets, and the demo is the only one
+ * carrying a whole simulated application; the home page must pay for neither.
+ * Splitting here keeps their markup, styles, screenshots and demo logic out of
+ * the initial bundle and out of the home page's request graph entirely. The
+ * remaining routes are small and text-only, so splitting them would buy a
  * round trip and save nothing.
  */
 const AjaniMobile = lazy(() => import('./components/pages/AjaniMobile'));
+const AjaniMobileDemo = lazy(() => import('./components/pages/AjaniMobileDemo'));
 
 function App() {
   return (
@@ -48,6 +50,14 @@ function App() {
           element={
             <Suspense fallback={<RouteFallback label="Loading the Ajani Mobile case study…" />}>
               <AjaniMobile />
+            </Suspense>
+          }
+        />
+        <Route
+          path={AJANI_MOBILE_DEMO_ROUTE}
+          element={
+            <Suspense fallback={<RouteFallback label="Loading the Ajani Mobile demo…" />}>
+              <AjaniMobileDemo />
             </Suspense>
           }
         />

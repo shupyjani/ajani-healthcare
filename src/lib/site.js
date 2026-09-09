@@ -19,6 +19,11 @@ export const FIELD_OPERATIONS_REPO_URL = 'https://github.com/shupyjani/field-ope
    SectionLink builds "/#id" hrefs from them. */
 export const AJANI_MOBILE_ROUTE = '/products/ajani-mobile';
 
+/* The interactive demonstration, nested under the case study it belongs to.
+   Reached from the case study, never from the home page: the teaser sends a
+   visitor to the case study first so they meet the product before the demo. */
+export const AJANI_MOBILE_DEMO_ROUTE = '/products/ajani-mobile/demo';
+
 export const SITE_NAME = 'Ajani Healthcare';
 
 /* The published enquiry address. Used as the fallback route when the contact
