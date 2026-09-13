@@ -156,17 +156,8 @@
   border-color: var(--color-bg-inverse);
 }
 
-.hv-hub-mark .brand-mark-plate {
-  fill: transparent;
-}
-
-.hv-hub-mark .brand-mark-frame {
-  fill: var(--color-accent);
-}
-
-.hv-hub-mark .brand-mark-bar {
-  fill: var(--ahc-surface);
-}
+/* The symbol keeps its one approved colourway here as everywhere else; the
+   teal plate reads against this badge without being restyled. */
 
 /* --- Foot ------------------------------------------------------------ */
 

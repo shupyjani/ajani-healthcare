@@ -120,6 +120,17 @@ export function CheckGlyph(props) {
   );
 }
 
+/* Carried by the Cancelled badge, so the status is a shape as well as a
+   colour and a word. */
+export function CancelGlyph(props) {
+  return (
+    <Glyph size={14} {...props}>
+      <circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="2" />
+      <path d="M8.2 15.8 15.8 8.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </Glyph>
+  );
+}
+
 export function BackGlyph(props) {
   return (
     <Glyph size={20} {...props}>

@@ -34,6 +34,11 @@
   --d-focus: #bd7617;
   --d-bar: rgba(255, 253, 248, 0.94);
   --d-scrim: rgba(11, 40, 48, 0.45);
+  /* Cancelled: a muted slate, deliberately not the error red. A cancelled
+     visit is a normal operational outcome, not a fault.
+     #4a4f57 on #e7e8ea measures 7.2:1. */
+  --d-closed: #4a4f57;
+  --d-closed-soft: #e7e8ea;
 
   --phone-width: 390px;
 }
@@ -56,6 +61,9 @@
     --d-focus: #f0b357;
     --d-bar: rgba(23, 24, 26, 0.94);
     --d-scrim: rgba(0, 0, 0, 0.6);
+    /* #b9bec6 on #23262b measures 8.1:1. */
+    --d-closed: #b9bec6;
+    --d-closed-soft: #23262b;
   }
 }
 
@@ -102,6 +110,122 @@
   scrollbar-gutter: stable;
   /* Top padding clears the Dynamic Island the frame draws over the screen. */
   padding: 2.6rem 0.85rem 0.85rem;
+}
+
+/*
+  An iOS-like scrollbar, inside the phone only.
+
+  Every selector below is a descendant of the demo app, so the page's own
+  scrollbar is untouched — a demonstration of a phone has no business
+  restyling the browser around it.
+
+  The reason the first attempt at this stayed stubbornly thick is worth
+  recording. `scrollbar-width: thin` and `::-webkit-scrollbar` are not
+  additive: where the standard property is supported, WebKit and Blink switch
+  to the standard scrollbar and ignore the pseudo-elements outright. So the
+  declared `width: 6px` was never applied, and what Safari drew was its own
+  thin scrollbar, whose width an author cannot set at all.
+
+  They are therefore separated by engine. The pseudo-elements carry the sizing
+  for WebKit and Blink; the standard properties are given only to engines that
+  do not implement the pseudo-elements, which is how Firefox still gets a thin
+  tinted bar.
+
+  The visible thumb is 3px. It sits inside a 9px track with a transparent
+  border and `background-clip: padding-box`, so the part a pointer can grab
+  stays a usable width while the part that is painted stays as slight as the
+  reference. The track itself is transparent, and nothing here touches wheel,
+  touch, keyboard or assistive-technology scrolling: those come from
+  `overflow-y: auto` on the same elements, which is unchanged.
+*/
+.demo-app {
+  --d-scrollbar-track: 9px;
+  --d-scrollbar-inset: 3px;
+  --d-scroll-thumb: rgba(11, 83, 81, 0.32);
+  --d-scroll-thumb-hover: rgba(11, 83, 81, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  .demo-app {
+    --d-scroll-thumb: rgba(233, 239, 238, 0.28);
+    --d-scroll-thumb-hover: rgba(233, 239, 238, 0.45);
+  }
+}
+
+.demo-screen-scroll::-webkit-scrollbar,
+.demo-assistant-log::-webkit-scrollbar,
+.demo-dialog--form::-webkit-scrollbar {
+  width: var(--d-scrollbar-track);
+  height: var(--d-scrollbar-track);
+}
+
+.demo-screen-scroll::-webkit-scrollbar-track,
+.demo-assistant-log::-webkit-scrollbar-track,
+.demo-dialog--form::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.demo-screen-scroll::-webkit-scrollbar-thumb,
+.demo-assistant-log::-webkit-scrollbar-thumb,
+.demo-dialog--form::-webkit-scrollbar-thumb {
+  background-color: var(--d-scroll-thumb);
+  /* The border is the difference between what is grabbable and what is seen. */
+  border: var(--d-scrollbar-inset) solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+
+.demo-screen-scroll::-webkit-scrollbar-thumb:hover,
+.demo-assistant-log::-webkit-scrollbar-thumb:hover,
+.demo-dialog--form::-webkit-scrollbar-thumb:hover {
+  background-color: var(--d-scroll-thumb-hover);
+}
+
+/*
+  Engines without the pseudo-elements — Firefox — take the standard properties
+  instead. Applying both would cost the sizing above everywhere.
+*/
+@supports not selector(::-webkit-scrollbar) {
+  .demo-screen-scroll,
+  .demo-assistant-log,
+  .demo-dialog--form {
+    scrollbar-width: thin;
+    scrollbar-color: var(--d-scroll-thumb) transparent;
+  }
+}
+
+/* The Ajani symbol in the Application card, sized to sit on the text baseline
+   beside the label the way the line glyphs above it do. */
+/*
+  The Application card: the symbol and the product name on one centred row.
+
+  The symbol's viewBox is cropped to its plate, so this width is the badge a
+  reader actually sees rather than a canvas with transparent padding inside it
+  — at the old 16px canvas the visible badge was under 12px.
+
+  The row wraps rather than squeezing, so a large text setting pushes the name
+  onto its own line instead of shrinking it against the symbol.
+*/
+.demo-application {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin: 0.85rem 0 0;
+}
+
+.demo-app-mark {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+
+.demo-application-name {
+  min-width: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--d-text);
+  overflow-wrap: anywhere;
 }
 
 /* The measuring stick for the filter row's type, so it scales with the phone
@@ -273,6 +397,17 @@
   color: var(--d-text-2);
 }
 
+/*
+  Each quantity stays with its label.
+
+  The sentence may still wrap — it has to, on a narrow phone — but only at the
+  separators between phrases. Nothing is given a width, and the type is
+  unchanged.
+*/
+.demo-progress-phrase {
+  white-space: nowrap;
+}
+
 /* --- Current visit ----------------------------------------------------- */
 
 .demo-current-head {
@@ -354,6 +489,11 @@
 .demo-badge--en-route {
   background-color: var(--d-gold-soft);
   color: var(--d-gold);
+}
+
+.demo-badge--cancelled {
+  background-color: var(--d-closed-soft);
+  color: var(--d-closed);
 }
 
 .demo-badge--planned {
@@ -765,6 +905,138 @@
   color: var(--d-text-2);
 }
 
+/* --- Assistant ---------------------------------------------------------- */
+
+.demo-assistant-disclosure {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border-left: 3px solid var(--d-accent);
+  background-color: var(--d-card);
+  border-radius: 0 10px 10px 0;
+  font-size: 0.76rem;
+  color: var(--d-text-2);
+}
+
+.demo-assistant-log {
+  max-height: 42%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.6rem;
+  border: 1px solid var(--d-border);
+  border-radius: 12px;
+  background-color: var(--d-card);
+}
+
+.demo-assistant-welcome {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--d-text-2);
+}
+
+.demo-assistant-messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.demo-assistant-message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.demo-assistant-role {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--d-text-2);
+}
+
+.demo-assistant-message--assistant .demo-assistant-role {
+  color: var(--d-accent);
+}
+
+.demo-assistant-text {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--d-text);
+  white-space: pre-wrap;
+}
+
+.demo-assistant-status {
+  margin: 0;
+  min-height: 1.1rem;
+  font-size: 0.74rem;
+  color: var(--d-text-2);
+}
+
+.demo-assistant-suggestions {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.demo-suggestion {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--d-border);
+  border-radius: 10px;
+  background-color: var(--d-card);
+  color: var(--d-text);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--motion-duration-short, 200ms) ease;
+}
+
+.demo-suggestion:hover:not(:disabled) {
+  border-color: var(--d-accent);
+}
+
+.demo-suggestion:disabled,
+.demo-assistant-send:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.demo-assistant-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem;
+}
+
+.demo-assistant-input {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--d-border-strong);
+  border-radius: 10px;
+  background-color: var(--d-card);
+  color: var(--d-text);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.demo-assistant-send {
+  flex: none;
+  padding-inline: 0.8rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-suggestion {
+    transition: none !important;
+  }
+}
+
 /* --- Tab bar ----------------------------------------------------------- */
 
 .demo-tabbar {
@@ -802,6 +1074,89 @@
   background-color: var(--d-accent-soft);
   color: var(--d-accent);
   font-weight: 700;
+}
+
+/* The recorded cancellation, read-only. Marked by a left rule as well as by
+   its muted ink, so it reads as closed without depending on colour. */
+.demo-card--cancelled {
+  border-left: 3px solid var(--d-closed);
+}
+
+.demo-button--danger {
+  background-color: var(--d-closed);
+  border-color: var(--d-closed);
+  color: var(--d-card);
+}
+
+/* --- Cancellation form -------------------------------------------------- */
+
+.demo-dialog--form {
+  max-height: 88%;
+  overflow-y: auto;
+}
+
+.demo-fieldset {
+  margin: 0 0 0.7rem;
+  padding: 0;
+  border: 0;
+}
+
+.demo-legend {
+  padding: 0;
+  margin-bottom: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--d-text);
+}
+
+.demo-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 36px;
+  font-size: 0.82rem;
+  color: var(--d-text);
+  cursor: pointer;
+}
+
+.demo-choice input {
+  accent-color: var(--d-accent);
+  cursor: pointer;
+}
+
+.demo-field-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--d-text);
+  margin-bottom: 0.25rem;
+}
+
+.demo-note-field {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--d-border-strong);
+  border-radius: 10px;
+  background-color: var(--d-bg);
+  color: var(--d-text);
+  font: inherit;
+  font-size: 0.82rem;
+  resize: vertical;
+}
+
+.demo-field-hint {
+  margin: 0.25rem 0 0.7rem;
+  font-size: 0.72rem;
+  color: var(--d-text-2);
+}
+
+.demo-dialog-error {
+  margin: 0 0 0.6rem;
+  padding: 0.45rem 0.55rem;
+  border-left: 3px solid var(--d-focus);
+  background-color: var(--d-bg);
+  font-size: 0.8rem;
+  color: var(--d-text);
 }
 
 /* --- Confirmation dialog ----------------------------------------------- */
@@ -861,4 +1216,11 @@
   .demo-tab {
     transition: none !important;
   }
+}
+
+
+.demo-assistant-source {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--d-text-2);
 }

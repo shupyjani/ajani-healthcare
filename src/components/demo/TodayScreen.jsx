@@ -6,6 +6,8 @@ import {
   isInProgress,
   primaryVisit,
   progress,
+  progressPhrases,
+  progressSummary,
   todayVisits,
 } from '../../lib/demoState';
 import { PRACTITIONER, SHIFT } from '../../lib/demoVisits';
@@ -19,7 +21,7 @@ import { ClockGlyph, PinGlyph, RouteGlyph } from './demoIcons';
  * a progressbar with a value, not a decorated div.
  */
 function TodayScreen({ state, onOpen, onAdvance, registerRow }) {
-  const { completed, total, remaining, percent } = progress(state);
+  const { resolved, total, percent } = progress(state);
   const current = primaryVisit(state);
   const schedule = todayVisits(state);
 
@@ -62,15 +64,27 @@ function TodayScreen({ state, onOpen, onAdvance, registerRow }) {
         <div
           className="demo-progress-track"
           role="progressbar"
-          aria-valuenow={completed}
+          aria-valuenow={resolved}
           aria-valuemin={0}
           aria-valuemax={total}
-          aria-label={`Shift progress, ${completed} of ${total} visits complete`}
+          aria-label={`Shift progress, ${progressSummary(state)}`}
         >
           <span className="demo-progress-fill" style={{ width: `${percent}%` }} />
         </div>
+        {/*
+          One span per phrase, each held together by white-space: nowrap, with
+          the separators as ordinary text between them. Wrapping can therefore
+          only happen at a dot, never between a number and the word it counts.
+          The paragraph's text is still the whole sentence, so what a screen
+          reader announces is unchanged.
+        */}
         <p className="demo-progress-count">
-          {completed} of {total} visits complete · {remaining} remaining
+          {progressPhrases(state).map((phrase, index) => (
+            <React.Fragment key={phrase}>
+              {index > 0 && ' · '}
+              <span className="demo-progress-phrase">{phrase}</span>
+            </React.Fragment>
+          ))}
         </p>
       </section>
 
@@ -131,7 +145,7 @@ function TodayScreen({ state, onOpen, onAdvance, registerRow }) {
         <section className="demo-card demo-card--done">
           <h4 className="demo-current-name">Round complete</h4>
           <p className="demo-empty-detail">
-            All {total} visits on this round have been completed.
+            Nothing is left waiting on this round of {total} visits.
           </p>
         </section>
       )}

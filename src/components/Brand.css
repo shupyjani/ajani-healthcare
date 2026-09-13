@@ -1,64 +1,36 @@
+/*
+  The lockup is a single image of the approved artwork.
+
+  Height is what is set; the width follows the file's own aspect ratio, so the
+  logo is never cropped and never stretched, and the gap between the "j" and
+  HEALTHCARE is whatever the artwork says it is rather than whatever a
+  stylesheet would impose.
+*/
 .brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.65rem;
-  text-decoration: none;
+  display: inline-block;
+  vertical-align: middle;
 }
 
+/*
+  A lockup is not a badge, and sizing it like one was the shared fault behind
+  every "undersized" placement: at 2.5rem the descriptor stood 2.5px tall.
+  The height below is set against the trimmed artwork, where it is the height
+  the logo actually occupies, and it scales down rather than crowding a narrow
+  header.
+*/
+.brand--lockup {
+  height: clamp(3rem, 5vw, 3.75rem);
+  width: auto;
+  max-width: 100%;
+}
+
+/* Square, so the same number means something different here. */
+.brand--symbol {
+  height: 2.75rem;
+  width: auto;
+}
+
+/* The symbol paints its own approved colours; only layout belongs here. */
 .brand-mark {
   flex-shrink: 0;
-}
-
-.brand-mark-plate {
-  fill: var(--color-brand-strong);
-}
-
-.brand-mark-frame {
-  fill: var(--color-accent);
-}
-
-.brand-mark-bar {
-  fill: var(--ahc-surface);
-}
-
-.brand--inverse .brand-mark-plate {
-  fill: var(--ahc-surface);
-}
-
-.brand--inverse .brand-mark-frame {
-  fill: var(--color-brand-strong);
-}
-
-.brand--inverse .brand-mark-bar {
-  fill: var(--color-accent);
-}
-
-.brand-wordmark {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.05;
-  font-family: var(--font-serif);
-}
-
-.brand-wordmark-primary {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--color-text);
-  letter-spacing: 0.01em;
-}
-
-.brand-wordmark-secondary {
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
-.brand--inverse .brand-wordmark-primary {
-  color: var(--color-text-inverse);
-}
-
-.brand--inverse .brand-wordmark-secondary {
-  color: var(--color-text-inverse-muted);
 }
