@@ -3,12 +3,20 @@ import StatusBadge from './StatusBadge';
 import {
   ADVANCE_LABELS,
   STATUS_ORDER,
+  canCancel,
   canEditTasks,
   canReturnToPlanned,
   taskLockReason,
   taskProgress,
 } from '../../lib/demoState';
-import { BackGlyph, ClockGlyph, PinGlyph, ReferenceGlyph, RouteGlyph } from './demoIcons';
+import {
+  BackGlyph,
+  CancelGlyph,
+  ClockGlyph,
+  PinGlyph,
+  ReferenceGlyph,
+  RouteGlyph,
+} from './demoIcons';
 
 /*
  * One visit in full.
@@ -19,7 +27,14 @@ import { BackGlyph, ClockGlyph, PinGlyph, ReferenceGlyph, RouteGlyph } from './d
  * rather than from the screen they just opened — and the caller restores focus
  * to the row they came from when it closes.
  */
-function VisitDetailScreen({ visit, onBack, onToggleTask, onAdvance, onRequestReturn }) {
+function VisitDetailScreen({
+  visit,
+  onBack,
+  onToggleTask,
+  onAdvance,
+  onRequestReturn,
+  onRequestCancel,
+}) {
   const headingRef = useRef(null);
   const actionRef = useRef(null);
   const { done, total } = taskProgress(visit);
@@ -113,6 +128,30 @@ function VisitDetailScreen({ visit, onBack, onToggleTask, onAdvance, onRequestRe
         </dl>
       </section>
 
+      {visit.cancellation && (
+        <section className="demo-card demo-card--cancelled" aria-labelledby="demo-cancelled-heading">
+          <h4 className="demo-section-title" id="demo-cancelled-heading">
+            Cancellation
+          </h4>
+          <dl className="demo-detail-list">
+            <div className="demo-detail-row">
+              <dt>
+                <CancelGlyph /> Reason
+              </dt>
+              <dd>{visit.cancellation.reason}</dd>
+            </div>
+            {visit.cancellation.note && (
+              <div className="demo-detail-row">
+                <dt>
+                  <ReferenceGlyph /> Note
+                </dt>
+                <dd>{visit.cancellation.note}</dd>
+              </div>
+            )}
+          </dl>
+        </section>
+      )}
+
       <section className="demo-card" aria-labelledby="demo-tasks-heading">
         <div className="demo-section-head">
           <h4 id="demo-tasks-heading" className="demo-section-title">
@@ -186,9 +225,11 @@ function VisitDetailScreen({ visit, onBack, onToggleTask, onAdvance, onRequestRe
             {advanceLabel}
           </button>
         ) : (
-          <p className="demo-complete-note">
-            This visit is complete. Its status cannot be changed again.
-          </p>
+          visit.status === 'completed' && (
+            <p className="demo-complete-note">
+              This visit is complete. Its status cannot be changed again.
+            </p>
+          )
         )}
         {/* The one way back: a practitioner redirected before they arrive.
             Secondary throughout — the primary action is still to carry on. */}
@@ -202,9 +243,26 @@ function VisitDetailScreen({ visit, onBack, onToggleTask, onAdvance, onRequestRe
           </button>
         )}
 
-        <p className="demo-step-note">
-          Step {step} of {STATUS_ORDER.length} in the visit sequence.
-        </p>
+        {/* Cancelling is available while a visit is still ahead of the
+            practitioner — planned or en route — and never once they have
+            arrived or the record is closed. Secondary throughout. */}
+        {canCancel(visit) && (
+          <button
+            type="button"
+            className="demo-button demo-button--quiet"
+            onClick={() => onRequestCancel(visit.id)}
+          >
+            Cancel visit
+          </button>
+        )}
+
+        {visit.status === 'cancelled' ? (
+          <p className="demo-step-note">This visit was cancelled and is now closed.</p>
+        ) : (
+          <p className="demo-step-note">
+            Step {step} of {STATUS_ORDER.length} in the visit sequence.
+          </p>
+        )}
       </div>
     </div>
   );

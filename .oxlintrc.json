@@ -66,6 +66,7 @@
     {
       "files": [
         "scripts/**/*.mjs",
+        "netlify/functions/**/*.mjs",
         "vite.config.js"
       ],
       "env": {

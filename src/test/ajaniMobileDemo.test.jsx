@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from './renderApp';
 import { AJANI_MOBILE_DEMO_ROUTE, AJANI_MOBILE_ROUTE } from '../lib/site';
@@ -35,6 +35,11 @@ async function completeThroughWarning(user, label = 'Complete with tasks outstan
   await user.click(within(dialog()).getByRole('button', { name: label }));
 }
 const phone = () => document.querySelector('.demo-app');
+
+/* The progress sentence is laid out as one nowrap span per phrase, so it is
+   read back from the paragraph rather than matched as a single text node. */
+const progressText = () =>
+  document.querySelector('.demo-progress-count')?.textContent.replace(/\s+/g, ' ').trim() ?? '';
 
 describe('the demo route', () => {
   it('renders at /products/ajani-mobile/demo', async () => {
@@ -134,7 +139,7 @@ describe('Today', () => {
   it('opens on 2 of 7 complete, with Priya Raman in hand', async () => {
     await renderDemo();
 
-    expect(within(phone()).getByText('2 of 7 visits complete · 5 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
     expect(within(phone()).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
 
     const current = within(phone()).getByRole('heading', { name: 'Priya Raman', level: 4 });
@@ -157,7 +162,7 @@ describe('Today', () => {
 
     await completeThroughWarning(user);
 
-    expect(within(phone()).getByText('3 of 7 visits complete · 4 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('3 of 7 visits complete · 4 remaining');
     expect(within(phone()).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '3');
 
     /* The card now offers the next visit, which is planned rather than started. */
@@ -344,7 +349,7 @@ describe('visit detail', () => {
     );
     await user.click(within(phone()).getByRole('button', { name: /Back to the visit list/i }));
 
-    expect(within(phone()).getByText('3 of 7 visits complete · 4 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('3 of 7 visits complete · 4 remaining');
 
     await user.click(tab('Visits'));
     await user.click(within(phone()).getByRole('radio', { name: 'Completed' }));
@@ -411,15 +416,15 @@ describe('More', () => {
     expect(dialog()).toHaveAccessibleName('Complete this visit?');
     expect(dialog()).toHaveAttribute('aria-modal', 'true');
     /* Nothing has changed while the question stands. */
-    expect(within(phone()).getByText('2 of 7 visits complete · 5 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
 
     await user.click(within(dialog()).getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(within(phone()).getByText('2 of 7 visits complete · 5 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
 
     await user.click(within(phone()).getByRole('button', { name: 'Complete visit' }));
     await user.click(within(dialog()).getByRole('button', { name: 'Complete visit' }));
-    expect(within(phone()).getByText('3 of 7 visits complete · 4 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('3 of 7 visits complete · 4 remaining');
   });
 
   it('closes the confirmation on Escape without completing', async () => {
@@ -436,7 +441,7 @@ describe('More', () => {
     await user.keyboard('{Escape}');
 
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(within(phone()).getByText('2 of 7 visits complete · 5 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
   });
 });
 
@@ -498,7 +503,7 @@ describe('Reset demo', () => {
     await user.click(screen.getByRole('button', { name: 'Reset demo' }));
 
     expect(tab('Today')).toHaveAttribute('aria-selected', 'true');
-    expect(within(phone()).getByText('2 of 7 visits complete · 5 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
     expect(within(phone()).getByRole('heading', { name: 'Priya Raman', level: 4 })).toBeInTheDocument();
 
     await user.click(tab('Visits'));
@@ -524,12 +529,12 @@ describe('Reset demo', () => {
     expect(status).toHaveTextContent('Demo reset. 2 of 7 visits complete, Today selected.');
   });
 
-  it('sits outside the phone, above the simulated interface', async () => {
+  it('sits outside and immediately after the phone', async () => {
     await renderDemo();
 
     const reset = screen.getByRole('button', { name: 'Reset demo' });
     expect(reset.closest('.demo-app')).toBeNull();
-    expect(reset.closest('.demo-companion')).not.toBeNull();
+    expect(reset.closest('.demo-phone-controls')).not.toBeNull();
   });
 });
 
@@ -659,7 +664,7 @@ describe('the interaction cue', () => {
 
     /* Source order is the stacked order: cue, phone, card. No CSS `order`
        is needed to produce it, so it cannot drift from the reading order. */
-    expect([...workspace.children]).toEqual([cue, stage, companion]);
+    expect([...workspace.children]).toEqual([cue, stage, document.querySelector('.demo-phone-controls'), document.querySelector('.demo-page-lede'), companion]);
   });
 
   it('is the heading for the region the phone sits in', async () => {
@@ -715,7 +720,7 @@ describe('completing with tasks outstanding, through the interface', () => {
     ).toBeInTheDocument();
 
     /* Nothing has moved while the question stands. */
-    expect(within(phone()).getByText('2 of 7 visits complete · 5 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
   });
 
   it('uses singular wording when one task remains', async () => {
@@ -767,7 +772,7 @@ describe('completing with tasks outstanding, through the interface', () => {
 
     await completeThroughWarning(user);
 
-    expect(within(phone()).getByText('3 of 7 visits complete · 4 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('3 of 7 visits complete · 4 remaining');
 
     await user.click(tab('Visits'));
     await user.click(within(phone()).getByRole('button', { name: /Priya Raman/ }));
@@ -784,7 +789,7 @@ describe('completing with tasks outstanding, through the interface', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull();
     /* Escape backs out entirely — it does not open the checklist. */
-    expect(within(phone()).getByText('2 of 7 visits complete · 5 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
     expect(within(phone()).getByRole('heading', { name: 'Priya Raman', level: 4 })).toBeInTheDocument();
   });
 
@@ -807,7 +812,7 @@ describe('completing with tasks outstanding, through the interface', () => {
 
     /* One question, one completion — no second dialog behind the first. */
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(within(phone()).getByText('3 of 7 visits complete · 4 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('3 of 7 visits complete · 4 remaining');
   });
 });
 
@@ -844,7 +849,7 @@ describe('only one visit may be active', () => {
     /* And Priya has not been completed, paused or replaced. */
     await user.click(within(phone()).getByRole('button', { name: /Back to the visit list/i }));
     await user.click(tab('Today'));
-    expect(within(phone()).getByText('2 of 7 visits complete · 5 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
     expect(within(phone()).getByRole('heading', { name: 'Priya Raman', level: 4 })).toBeInTheDocument();
     expect(within(phone()).getByText('In progress')).toBeInTheDocument();
   });
@@ -908,7 +913,7 @@ describe('only one visit may be active', () => {
 
     await user.click(screen.getByRole('button', { name: 'Reset demo' }));
 
-    expect(within(phone()).getByText('2 of 7 visits complete · 5 remaining')).toBeInTheDocument();
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
     expect(within(phone()).getByRole('heading', { name: 'Priya Raman', level: 4 })).toBeInTheDocument();
     expect(within(phone()).getByText('In progress')).toBeInTheDocument();
   });
@@ -945,14 +950,14 @@ describe('the desktop phone is capped by the viewport height', () => {
     }
   });
 
-  it('spans the phone across both rows so the columns align', () => {
+  it('aligns the card and phone below shared introduction rows', () => {
     const layoutRule = /\.demo-layout\s*\{([^}]*)\}/.exec(demoCss);
     const stageRule = /\.demo-stage\s*\{([^}]*)\}/.exec(demoCss);
 
     /* Two rows, the second taking the slack; the phone spanning both is what
        makes its height the workspace's height. */
-    expect(layoutRule[1]).toMatch(/grid-template-rows:\s*auto 1fr/);
-    expect(stageRule[1]).toMatch(/grid-row:\s*1\s*\/\s*span 2/);
+    expect(layoutRule[1]).toMatch(/grid-template-rows:\s*auto auto auto/);
+    expect(stageRule[1]).toMatch(/grid-row:\s*2\s*;/);
     /* Start-aligned, so the frame keeps its aspect-ratio height. */
     expect(stageRule[1]).toMatch(/align-self:\s*start/);
 
@@ -1387,10 +1392,10 @@ describe('checklists are readable everywhere, editable only on arrival', () => {
 describe('the journeys to try', () => {
   const LEADS = [
     'Complete a visit.',
-    'Search and filter.',
-    'Keep one visit active.',
     'Change priorities.',
-    'Adjust preferences.',
+    'Cancel a visit.',
+    'Ask about the round.',
+    'Follow up on a task.',
   ];
 
   it('lists exactly five, in order, each once', async () => {
@@ -1416,22 +1421,10 @@ describe('the journeys to try', () => {
       'Complete a visit. Open Priya Raman, complete her remaining tasks, then complete the '
       + 'visit and watch progress move from 2 of 7 to 3 of 7.',
     );
-    expect(search).toBe(
-      'Search and filter. Search for “Ivor” by name, “Bramble” by address or “AV-1044” by '
-      + 'visit reference, then select “Planned”.',
-    );
-    expect(active).toBe(
-      'Keep one visit active. Start travelling to Ivor Bankole, then try to start Halina '
-      + 'Nowak. The app will keep Ivor active and offer to take you back to his visit.',
-    );
-    expect(priorities).toBe(
-      'Change priorities. In Ivor’s visit, choose “Return to Planned”, then start travelling '
-      + 'to Halina instead.',
-    );
-    expect(preferences).toBe(
-      'Adjust preferences. Under “More”, show or hide completed visits and turn completion '
-      + 'confirmation on.',
-    );
+    expect(search).toBe('Change priorities. Search for “Ivor” in Visits and start travelling. Choose “Return to Planned”, then start travelling to Halina instead.');
+    expect(active).toBe('Cancel a visit. Open Halina’s visit, choose “Cancel visit” and select “Family cancelled”. Confirm the cancellation and check the updated progress.');
+    expect(priorities).toBe('Ask about the round. Under “More”, open “Ajani Assistant” and ask “How many visits are left?” or “Which visits are cancelled?”');
+    expect(preferences).toBe('Follow up on a task. Ask “Does anyone have a walking task?”, then “Has that task been completed?” to check its current state.');
   });
 
   it('emphasises with weight and adds no controls', async () => {
@@ -1446,7 +1439,7 @@ describe('the journeys to try', () => {
     expect([...list.querySelectorAll('.demo-try-count')].map((n) => n.textContent))
       .toEqual(['2 of 7', '3 of 7']);
     expect([...list.querySelectorAll('.demo-try-ui')].map((n) => n.textContent))
-      .toEqual(['“Ivor”', '“Bramble”', '“AV-1044”', '“Planned”', '“Return to Planned”', '“More”']);
+      .toEqual(['“Ivor”', '“Return to Planned”', '“Cancel visit”', '“Family cancelled”', '“More”', '“Ajani Assistant”', '“How many visits are left?”', '“Which visits are cancelled?”', '“Does anyone have a walking task?”', '“Has that task been completed?”']);
 
     /* Every emphasis is a <b>, so weight carries it even without colour. */
     for (const node of list.querySelectorAll('.demo-try-lead, .demo-try-ui, .demo-try-count')) {
@@ -1458,7 +1451,7 @@ describe('the journeys to try', () => {
     await renderDemo();
 
     const list = document.querySelector('.demo-try-list');
-    for (const name of ['Priya Raman', 'Ivor Bankole', 'Halina Nowak']) {
+    for (const name of ['Priya Raman', 'Halina']) {
       expect(list).toHaveTextContent(name);
       expect([...list.querySelectorAll('b')].map((n) => n.textContent)).not.toContain(name);
     }
@@ -1466,11 +1459,11 @@ describe('the journeys to try', () => {
 });
 
 describe('the visit reference is labelled', () => {
-  it('names AV-1044 as a visit reference in the journeys', async () => {
+  it('names the exact search term in the revised journey', async () => {
     await renderDemo();
 
     const search = [...document.querySelectorAll('.demo-try-list li')][1];
-    expect(search.textContent.replace(/\s+/g, ' ')).toContain('“AV-1044” by visit reference');
+    expect(search.textContent.replace(/\s+/g, ' ')).toContain('Search for “Ivor” in Visits');
   });
 
   it('labels the reference visibly on a visit', async () => {
@@ -1517,11 +1510,11 @@ describe('the approved layout and selector must survive later passes', () => {
        three are wrapped in Reveal, which adds its own class ahead of theirs. */
     expect(
       [...workspace.children].map((child) =>
-        ['demo-cue', 'demo-stage', 'demo-companion'].find((name) =>
+        ['demo-cue', 'demo-stage', 'demo-phone-controls', 'demo-page-lede', 'demo-companion'].find((name) =>
           child.classList.contains(name),
         ),
       ),
-    ).toEqual(['demo-cue', 'demo-stage', 'demo-companion']);
+    ).toEqual(['demo-cue', 'demo-stage', 'demo-phone-controls', 'demo-page-lede', 'demo-companion']);
 
     /* Source order is the stacked order: no CSS `order` may reintroduce a
        difference between what is read and what is seen. */
@@ -1540,11 +1533,11 @@ describe('the approved layout and selector must survive later passes', () => {
     ).toBeTruthy();
   });
 
-  it('keeps the phone spanning both rows with its height-aware width cap', () => {
+  it('keeps the phone on row two with its height-aware width cap', () => {
     const demoCss = readFileSync('src/components/pages/AjaniMobileDemo.css', 'utf8');
     const stageRule = /\.demo-stage\s*\{([^}]*)\}/.exec(demoCss);
 
-    expect(stageRule[1]).toMatch(/grid-row:\s*1\s*\/\s*span 2/);
+    expect(stageRule[1]).toMatch(/grid-row:\s*2\s*;/);
     expect(stageRule[1]).toMatch(/align-self:\s*start/);
 
     const cap = demoCss.slice(demoCss.indexOf('@media screen and (min-width: 901px)'));
@@ -1732,7 +1725,7 @@ describe('the companion card ends level with the phone', () => {
     const repository = screen.getByRole('link', { name: /View native repository/i });
 
     /* Different groups, so Reset never shares the link row. */
-    expect(reset.closest('.demo-companion-actions')).not.toBeNull();
+    expect(reset.closest('.demo-phone-controls')).not.toBeNull();
     expect(reset.closest('.demo-companion-links')).toBeNull();
     expect(caseStudy.parentElement).toBe(repository.parentElement);
     expect(caseStudy.parentElement).toHaveClass('demo-companion-links');
@@ -1760,7 +1753,7 @@ describe('the companion card ends level with the phone', () => {
     const items = [...document.querySelectorAll('.demo-try-list li')];
     expect(items).toHaveLength(5);
     expect(items[0].querySelector('.demo-try-lead').textContent).toBe('Complete a visit.');
-    expect(items[4].querySelector('.demo-try-lead').textContent).toBe('Adjust preferences.');
+    expect(items[4].querySelector('.demo-try-lead').textContent).toBe('Follow up on a task.');
 
     const desktop = demoCss.slice(demoCss.indexOf('@media screen and (min-width: 901px)'));
     expect(desktop).toMatch(/\.demo-try-list li \{\s*margin-bottom:\s*0\.85rem/);
@@ -1769,5 +1762,992 @@ describe('the companion card ends level with the phone', () => {
     expect(demoCss).not.toMatch(/transform:|zoom:|position:\s*absolute/);
     const companion = /\.demo-companion\s*\{([^}]*)\}/.exec(demoCss)[1];
     expect(companion).not.toMatch(/min-height|height:\s*[0-9]/);
+  });
+});
+
+describe('cancelling a visit through the interface', () => {
+  /* Open a planned visit's detail from the Visits list. */
+  async function openPlanned(user, name = /Ivor Bankole/) {
+    await user.click(tab('Visits'));
+    await user.click(within(phone()).getByRole('button', { name }));
+  }
+
+  async function cancelIt(user, reason = 'Family cancelled', note = null) {
+    await user.click(within(phone()).getByRole('button', { name: 'Cancel visit' }));
+    await user.click(within(dialog()).getByRole('radio', { name: reason }));
+    if (note !== null) {
+      await user.type(within(dialog()).getByRole('textbox', { name: /Operational note/i }), note);
+    }
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancel visit' }));
+  }
+
+  it('offers the action for planned and en route visits only', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+
+    /* Arrived — no cancel. */
+    await user.click(within(phone()).getByRole('button', { name: 'Open visit' }));
+    expect(within(phone()).queryByRole('button', { name: 'Cancel visit' })).toBeNull();
+    await user.click(within(phone()).getByRole('button', { name: /Back to the visit list/i }));
+
+    /* Planned — cancel offered. */
+    await openPlanned(user);
+    expect(within(phone()).getByRole('button', { name: 'Cancel visit' })).toBeInTheDocument();
+
+    /* Completed — no cancel. */
+    await user.click(within(phone()).getByRole('button', { name: /Back to the visit list/i }));
+    await user.click(within(phone()).getByRole('button', { name: /Marguerite Okonjo/ }));
+    expect(within(phone()).queryByRole('button', { name: 'Cancel visit' })).toBeNull();
+  });
+
+  it('is never offered on the Today primary card', async () => {
+    await renderDemo();
+
+    const today = within(phone());
+    expect(today.getByRole('button', { name: 'Complete visit' })).toBeInTheDocument();
+    expect(today.queryByRole('button', { name: 'Cancel visit' })).toBeNull();
+  });
+
+  it('asks for a reason, naming the visit', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openPlanned(user);
+    await user.click(within(phone()).getByRole('button', { name: 'Cancel visit' }));
+
+    expect(dialog()).toHaveAccessibleName('Cancel visit for Ivor Bankole?');
+    expect(dialog()).toHaveAttribute('aria-modal', 'true');
+
+    const reasons = within(dialog()).getAllByRole('radio');
+    expect(reasons.map((r) => r.value)).toEqual([
+      'Family cancelled',
+      'Visit no longer required',
+      'Client unavailable',
+      'Office instruction',
+      'Other',
+    ]);
+    expect(within(dialog()).getByRole('textbox', { name: /Operational note/i })).toBeInTheDocument();
+    expect(within(dialog()).getByRole('button', { name: 'Keep visit' })).toBeInTheDocument();
+  });
+
+  it('refuses to submit without a reason, and says so', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openPlanned(user);
+    await user.click(within(phone()).getByRole('button', { name: 'Cancel visit' }));
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancel visit' }));
+
+    expect(within(dialog()).getByRole('alert'))
+      .toHaveTextContent('Choose a reason for cancelling this visit.');
+    /* Still open, still planned. */
+    expect(dialog()).toBeInTheDocument();
+  });
+
+  it('requires the note when Other is chosen', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openPlanned(user);
+    await user.click(within(phone()).getByRole('button', { name: 'Cancel visit' }));
+    await user.click(within(dialog()).getByRole('radio', { name: 'Other' }));
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancel visit' }));
+
+    expect(within(dialog()).getByRole('alert'))
+      .toHaveTextContent('Add a note describing why this visit was cancelled.');
+
+    await user.type(
+      within(dialog()).getByRole('textbox', { name: /Operational note/i }),
+      'Road closed',
+    );
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancel visit' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(within(phone()).getByText('Road closed')).toBeInTheDocument();
+  });
+
+  it('changes nothing when kept, and hands focus back', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openPlanned(user);
+
+    await user.click(within(phone()).getByRole('button', { name: 'Cancel visit' }));
+    await user.click(within(dialog()).getByRole('button', { name: 'Keep visit' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(within(phone()).getByRole('button', { name: 'Start travelling' })).toBeInTheDocument();
+    expect(within(phone()).getByRole('button', { name: 'Cancel visit' })).toHaveFocus();
+  });
+
+  it('changes nothing when dismissed with Escape', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openPlanned(user);
+
+    await user.click(within(phone()).getByRole('button', { name: 'Cancel visit' }));
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(within(phone()).getByRole('button', { name: 'Start travelling' })).toBeInTheDocument();
+  });
+
+  it('records the cancellation and shows it read-only', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openPlanned(user);
+    await cancelIt(user, 'Office instruction');
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(within(phone()).getByText('Cancellation')).toBeInTheDocument();
+    expect(within(phone()).getByText('Office instruction')).toBeInTheDocument();
+    expect(within(phone()).getByText('This visit was cancelled and is now closed.')).toBeInTheDocument();
+
+    /* No control remains to change its status. */
+    for (const name of ['Start travelling', 'Mark as arrived', 'Complete visit', 'Cancel visit',
+      'Return to Planned']) {
+      expect(within(phone()).queryByRole('button', { name })).toBeNull();
+    }
+  });
+
+  it('keeps the checklist visible, read-only, with its own explanation', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openPlanned(user);
+    await cancelIt(user);
+
+    const tasks = within(phone()).getAllByRole('checkbox');
+    expect(tasks).toHaveLength(3);
+    for (const task of tasks) expect(task).toBeDisabled();
+
+    expect(within(phone()).getByText('This cancelled visit’s checklist is read-only.'))
+      .toBeInTheDocument();
+    expect(within(phone()).getByText('0 of 3 done')).toBeInTheDocument();
+  });
+
+  it('shows a Cancelled badge that is more than a colour', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openPlanned(user);
+    await cancelIt(user);
+
+    const badge = phone().querySelector('.demo-badge--cancelled');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent('Cancelled');
+    expect(badge.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('releases the lock when the cancelled visit was en route', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await completeThroughWarning(user);
+
+    await openPlanned(user);
+    await user.click(within(phone()).getByRole('button', { name: 'Start travelling' }));
+    await cancelIt(user, 'Client unavailable');
+
+    await user.click(within(phone()).getByRole('button', { name: /Back to the visit list/i }));
+    await user.click(within(phone()).getByRole('button', { name: /Halina Nowak/ }));
+    await user.click(within(phone()).getByRole('button', { name: 'Start travelling' }));
+
+    /* No block: the round was freed by the cancellation. */
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(within(phone()).getByRole('button', { name: 'Mark as arrived' })).toBeInTheDocument();
+  });
+
+  it('reports completed and cancelled separately on Today', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
+
+    await openPlanned(user);
+    await cancelIt(user);
+    await user.click(tab('Today'));
+
+    expect(progressText()).toBe('3 of 7 visits resolved · 2 completed · 1 cancelled · 4 remaining');
+    /* The completed count did not move. */
+    expect(progressText()).not.toMatch(/3 of 7 visits complete/);
+    expect(within(phone()).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '3');
+  });
+
+  it('moves the primary card past the cancelled visit', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await completeThroughWarning(user);
+
+    await openPlanned(user);
+    await cancelIt(user);
+    await user.click(tab('Today'));
+
+    expect(within(phone()).getByRole('heading', { name: 'Halina Nowak', level: 4 })).toBeInTheDocument();
+    expect(within(phone()).queryByRole('heading', { name: 'Ivor Bankole', level: 4 })).toBeNull();
+  });
+
+  it('keeps the cancelled visit findable, and adds no fifth filter', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openPlanned(user);
+    await cancelIt(user);
+    await user.click(within(phone()).getByRole('button', { name: /Back to the visit list/i }));
+
+    /* Still four filters, still on one row. */
+    const group = within(phone()).getByRole('radiogroup', { name: /Filter visits by status/i });
+    expect(within(group).getAllByRole('radio').map((r) => r.textContent))
+      .toEqual(['All', 'Planned', 'In progress', 'Completed']);
+
+    /* Present under All, and by search. */
+    expect(within(phone()).getByRole('button', { name: /Ivor Bankole/ })).toBeInTheDocument();
+    await user.type(within(phone()).getByRole('searchbox'), 'Ivor');
+    expect(within(phone()).getByRole('button', { name: /Ivor Bankole/ })).toBeInTheDocument();
+    expect(within(phone()).getByText('Showing 1 of 7 visits')).toBeInTheDocument();
+  });
+
+  it('is not treated as completed by the Today preference', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openPlanned(user);
+    await cancelIt(user);
+
+    await user.click(tab('More'));
+    await user.click(
+      within(phone()).getByRole('checkbox', { name: 'Show completed visits on Today' }),
+    );
+    await user.click(tab('Today'));
+
+    /* Completed calls are hidden; the cancelled one is not. */
+    expect(within(phone()).queryByRole('button', { name: /Marguerite Okonjo/ })).toBeNull();
+    expect(within(phone()).getByRole('button', { name: /Ivor Bankole/ })).toBeInTheDocument();
+  });
+
+  it('is undone by Reset demo', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openPlanned(user);
+    await cancelIt(user);
+
+    await user.click(screen.getByRole('button', { name: 'Reset demo' }));
+
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
+    expect(phone().querySelector('.demo-badge--cancelled')).toBeNull();
+  });
+});
+
+describe('the Ajani Assistant', () => {
+  async function openAssistant(user) {
+    await user.click(tab('More'));
+    await user.click(within(phone()).getByRole('button', { name: 'Open assistant' }));
+  }
+
+  it('is reached from More, and does not add a tab', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+
+    /* Still three tabs, still the same three. */
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Today', 'Visits', 'More']);
+
+    await openAssistant(user);
+    expect(within(phone()).getByRole('heading', { name: 'Ajani Assistant' })).toBeInTheDocument();
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
+  });
+
+  it('shows the disclosure before anything is asked', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    expect(
+      within(phone()).getByText(
+        'Operational assistant. It cannot give clinical advice or update visits.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('closes with the back control', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    await user.click(within(phone()).getByRole('button', { name: /Back to More/i }));
+    expect(within(phone()).getByRole('heading', { name: 'Ajani Assistant', level: 4 }))
+      .toBeInTheDocument();
+    expect(within(phone()).getByRole('button', { name: 'Open assistant' })).toBeInTheDocument();
+  });
+
+  it('offers the suggested questions as real buttons', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    for (const question of [
+      'Who is my next visit?',
+      'Which visit is currently active?',
+      'Show my planned visits.',
+      'Which visit is marked Priority?',
+      'Find Ivor Bankole.',
+      'What tasks remain for Priya Raman?',
+      'How do I cancel a visit?',
+      'What happens to progress when a visit is cancelled?',
+    ]) {
+      const button = within(phone()).getByRole('button', { name: question });
+      expect(button.tagName).toBe('BUTTON');
+      expect(button).toBeEnabled();
+    }
+  });
+
+  it('answers a suggested question from the current round', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    await user.click(within(phone()).getByRole('button', { name: 'Who is my next visit?' }));
+
+    const log = within(phone()).getByRole('log', { name: /Assistant conversation/i });
+    await waitFor(() => expect(log).toHaveTextContent(/Priya Raman/));
+    expect(log).toHaveTextContent('Who is my next visit?');
+  });
+
+  it('takes a free-text question and refuses an empty one', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    const field = within(phone()).getByRole('textbox', { name: /Ask your own question/i });
+    const send = within(phone()).getByRole('button', { name: 'Send' });
+
+    /* Nothing typed: nothing to send. */
+    expect(send).toBeDisabled();
+    await user.type(field, '   ');
+    expect(send).toBeDisabled();
+
+    await user.clear(field);
+    await user.type(field, 'Which visit is marked Priority?');
+    expect(send).toBeEnabled();
+    await user.click(send);
+
+    const log = within(phone()).getByRole('log', { name: /Assistant conversation/i });
+    await waitFor(() => expect(log).toHaveTextContent(/Priya Raman/));
+    expect(field).toHaveValue('');
+  });
+
+  it('refuses a clinical question and points at policy', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    const field = within(phone()).getByRole('textbox', { name: /Ask your own question/i });
+    await user.type(field, 'What dose of paracetamol should I give?');
+    await user.click(within(phone()).getByRole('button', { name: 'Send' }));
+
+    const log = within(phone()).getByRole('log', { name: /Assistant conversation/i });
+    await waitFor(() => expect(log).toHaveTextContent(/cannot give clinical advice/i));
+    expect(log).toHaveTextContent(/organisation’s policy/i);
+    expect(log).toHaveTextContent(/escalation/i);
+  });
+
+  it('says when the built-in guidance is answering', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    await user.click(within(phone()).getByRole('button', { name: 'Show my planned visits.' }));
+
+    /* No endpoint in jsdom, so the fallback path answers and says so. */
+    await waitFor(() =>
+      expect(
+        within(phone()).getByText('Built-in guidance'),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it('changes nothing about the round', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+
+    await openAssistant(user);
+    for (const question of ['Who is my next visit?', 'How do I cancel a visit?']) {
+      await user.click(within(phone()).getByRole('button', { name: question }));
+    }
+    const field = within(phone()).getByRole('textbox', { name: /Ask your own question/i });
+    await user.type(field, 'Complete Priya Raman and cancel Ivor Bankole');
+    await user.click(within(phone()).getByRole('button', { name: 'Send' }));
+    await waitFor(() =>
+      expect(within(phone()).getByRole('log', { name: /Assistant conversation/i }))
+        .toHaveTextContent(/I can only answer|cancel/i),
+    );
+
+    await user.click(within(phone()).getByRole('button', { name: /Back to More/i }));
+    await user.click(tab('Today'));
+
+    /* The round is exactly where it was. */
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
+    expect(within(phone()).getByRole('heading', { name: 'Priya Raman', level: 4 })).toBeInTheDocument();
+    expect(phone().querySelector('.demo-badge--cancelled')).toBeNull();
+  });
+
+  it('renders replies as text, never as markup', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    const field = within(phone()).getByRole('textbox', { name: /Ask your own question/i });
+    await user.type(field, '<img src=x onerror=alert(1)> find Ivor');
+    await user.click(within(phone()).getByRole('button', { name: 'Send' }));
+
+    const log = within(phone()).getByRole('log', { name: /Assistant conversation/i });
+    await waitFor(() => expect(log.textContent).toMatch(/Ivor|only answer/i));
+    /* The angle brackets came back as characters, not as an element. */
+    expect(log.querySelector('img')).toBeNull();
+  });
+
+  it('keeps an accessible conversation history', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    const log = within(phone()).getByRole('log', { name: /Assistant conversation/i });
+    await user.click(within(phone()).getByRole('button', { name: 'Who is my next visit?' }));
+    await waitFor(() => expect(log).toHaveTextContent(/Priya Raman/));
+    await user.click(within(phone()).getByRole('button', { name: 'Which visit is marked Priority?' }));
+
+    await waitFor(() => {
+      expect(within(log).getAllByRole('listitem').length).toBeGreaterThanOrEqual(4);
+    });
+    expect(log).toHaveTextContent('Who is my next visit?');
+    expect(log).toHaveTextContent('Which visit is marked Priority?');
+  });
+
+  it('reads the round as it is now, including a cancellation', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+
+    /* Cancel Ivor first. */
+    await user.click(tab('Visits'));
+    await user.click(within(phone()).getByRole('button', { name: /Ivor Bankole/ }));
+    await user.click(within(phone()).getByRole('button', { name: 'Cancel visit' }));
+    await user.click(within(dialog()).getByRole('radio', { name: 'Family cancelled' }));
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancel visit' }));
+
+    await openAssistant(user);
+    await user.click(
+      within(phone()).getByRole('button', { name: 'What happens to progress when a visit is cancelled?' }),
+    );
+
+    const log = within(phone()).getByRole('log', { name: /Assistant conversation/i });
+    await waitFor(() =>
+      expect(log).toHaveTextContent('3 of 7 visits resolved · 2 completed · 1 cancelled · 4 remaining'),
+    );
+  });
+
+  it('is cleared by Reset demo', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    await user.click(within(phone()).getByRole('button', { name: 'Who is my next visit?' }));
+    const log = within(phone()).getByRole('log', { name: /Assistant conversation/i });
+    await waitFor(() => expect(log).toHaveTextContent(/Priya Raman/));
+
+    await user.click(screen.getByRole('button', { name: 'Reset demo' }));
+
+    /* Back to Today, with the conversation gone. */
+    expect(tab('Today')).toHaveAttribute('aria-selected', 'true');
+    await openAssistant(user);
+    expect(within(phone()).getByRole('log', { name: /Assistant conversation/i }))
+      .toHaveTextContent(/Ask about the round/);
+  });
+});
+
+describe('the progress sentence keeps each quantity with its label', () => {
+  const phoneCss = readFileSync('src/components/demo/DemoPhone.css', 'utf8');
+  const phrases = () =>
+    [...document.querySelectorAll('.demo-progress-phrase')].map((node) => node.textContent);
+
+  async function cancelIvor(user) {
+    await user.click(tab('Visits'));
+    await user.click(within(phone()).getByRole('button', { name: /Ivor Bankole/ }));
+    await user.click(within(phone()).getByRole('button', { name: 'Cancel visit' }));
+    await user.click(within(dialog()).getByRole('radio', { name: 'Family cancelled' }));
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancel visit' }));
+    await user.click(tab('Today'));
+  }
+
+  it('splits the plain sentence into its two phrases', async () => {
+    await renderDemo();
+
+    expect(phrases()).toEqual(['2 of 7 visits complete', '5 remaining']);
+    /* And the sentence a screen reader hears is unchanged. */
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
+  });
+
+  it('splits the cancelled sentence so no number is stranded', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await cancelIvor(user);
+
+    expect(phrases()).toEqual([
+      '3 of 7 visits resolved',
+      '2 completed',
+      '1 cancelled',
+      '4 remaining',
+    ]);
+    expect(progressText())
+      .toBe('3 of 7 visits resolved · 2 completed · 1 cancelled · 4 remaining');
+
+    /* Every number sits inside the same span as the word it counts. */
+    for (const phrase of phrases()) {
+      expect(phrase).toMatch(/^\d+ \S/);
+    }
+  });
+
+  it('keeps singular and plural outcomes grouped alike', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await cancelIvor(user);
+
+    /* One cancelled. */
+    expect(phrases()).toContain('1 cancelled');
+
+    /* Two cancelled: still one phrase per quantity. */
+    await user.click(tab('Visits'));
+    await user.click(within(phone()).getByRole('button', { name: /Halina Nowak/ }));
+    await user.click(within(phone()).getByRole('button', { name: 'Cancel visit' }));
+    await user.click(within(dialog()).getByRole('radio', { name: 'Office instruction' }));
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancel visit' }));
+    await user.click(tab('Today'));
+
+    expect(phrases()).toEqual([
+      '4 of 7 visits resolved',
+      '2 completed',
+      '2 cancelled',
+      '3 remaining',
+    ]);
+  });
+
+  it('holds each phrase together in the stylesheet', () => {
+    const rule = /\.demo-progress-phrase\s*\{([^}]*)\}/.exec(phoneCss);
+
+    expect(rule).not.toBeNull();
+    expect(rule[1]).toMatch(/white-space:\s*nowrap/);
+
+    /* Nothing is sized, moved or measured to achieve it. */
+    expect(rule[1]).not.toMatch(/width|position|transform/);
+
+    /* And the sentence as a whole is still allowed to wrap. */
+    const paragraph = /\.demo-progress-count\s*\{([^}]*)\}/.exec(phoneCss)[1];
+    expect(paragraph).not.toMatch(/white-space:\s*nowrap/);
+    expect(paragraph).not.toMatch(/font-size:\s*0\.[0-6]/);
+  });
+
+  it('gives the progress bar the whole sentence as its name', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await cancelIvor(user);
+
+    expect(within(phone()).getByRole('progressbar')).toHaveAccessibleName(
+      'Shift progress, 3 of 7 visits resolved · 2 completed · 1 cancelled · 4 remaining',
+    );
+  });
+});
+
+describe('the bottom navigation works from the Assistant', () => {
+  async function openAssistant(user) {
+    await user.click(tab('More'));
+    await user.click(within(phone()).getByRole('button', { name: 'Open assistant' }));
+  }
+
+  async function ask(user, question) {
+    await user.click(within(phone()).getByRole('button', { name: question }));
+    await waitFor(() =>
+      expect(within(phone()).getByRole('log', { name: /Assistant conversation/i }))
+        .toHaveTextContent(/Priya|planned|round/i),
+    );
+  }
+
+  it('leaves the tab bar visible and every tab operable', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.map((t) => t.textContent)).toEqual(['Today', 'Visits', 'More']);
+    for (const control of tabs) {
+      expect(control.tagName).toBe('BUTTON');
+      expect(control).toBeEnabled();
+    }
+  });
+
+  it('navigates to Today', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    await user.click(tab('Today'));
+
+    expect(within(phone()).queryByRole('heading', { name: 'Ajani Assistant', level: 3 })).toBeNull();
+    expect(progressText()).toBe('2 of 7 visits complete · 5 remaining');
+    expect(tab('Today')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('navigates to Visits', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    await user.click(tab('Visits'));
+
+    expect(within(phone()).getByRole('searchbox')).toBeInTheDocument();
+    expect(within(phone()).getByText('Showing all 7 visits')).toBeInTheDocument();
+    expect(tab('Visits')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('returns to More', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    await user.click(tab('More'));
+
+    expect(within(phone()).getByRole('button', { name: 'Open assistant' })).toBeInTheDocument();
+    expect(
+      within(phone()).getByRole('checkbox', { name: 'Show completed visits on Today' }),
+    ).toBeInTheDocument();
+    expect(tab('More')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('returns to More from the back control, and hands focus to the tab bar', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    await user.click(within(phone()).getByRole('button', { name: /Back to More/i }));
+
+    expect(within(phone()).getByRole('button', { name: 'Open assistant' })).toBeInTheDocument();
+    await waitFor(() => expect(tab('More')).toHaveFocus());
+  });
+
+  it('keeps the conversation when navigating away and back', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+    await ask(user, 'Who is my next visit?');
+
+    await user.click(tab('Today'));
+    await user.click(tab('Visits'));
+    await openAssistant(user);
+
+    const log = within(phone()).getByRole('log', { name: /Assistant conversation/i });
+    expect(log).toHaveTextContent('Who is my next visit?');
+    expect(log).toHaveTextContent(/Priya Raman/);
+  });
+
+  it('starts each destination at the top of the panel', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+
+    const panel = document.querySelector('.demo-screen-scroll');
+    panel.scrollTop = 240;
+
+    await user.click(tab('Today'));
+    expect(panel.scrollTop).toBe(0);
+  });
+
+  it('is cleared back to the welcome by Reset demo', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+    await ask(user, 'Who is my next visit?');
+
+    await user.click(screen.getByRole('button', { name: 'Reset demo' }));
+
+    expect(tab('Today')).toHaveAttribute('aria-selected', 'true');
+    await openAssistant(user);
+    const log = within(phone()).getByRole('log', { name: /Assistant conversation/i });
+    expect(log).toHaveTextContent(/Ask about the round/);
+    expect(log).not.toHaveTextContent('Who is my next visit?');
+  });
+});
+
+
+describe('pending assistant navigation and reset', () => {
+  async function openAssistant(user) {
+    await user.click(tab('More'));
+    await user.click(within(phone()).getByRole('button', { name: 'Open assistant' }));
+  }
+  it('retains a pending exchange across navigation and drops its reply after Reset', async () => {
+    const user = userEvent.setup();
+    let resolve;
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise((done) => { resolve = done; }));
+    try {
+      await renderDemo();
+      await openAssistant(user);
+      await user.dblClick(within(phone()).getByRole('button', { name: 'Who is my next visit?' }));
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      await user.click(tab('Today'));
+      await openAssistant(user);
+      expect(within(phone()).getByRole('log')).toHaveAttribute('aria-busy', 'true');
+      expect(within(phone()).getByRole('log')).toHaveTextContent('Who is my next visit?');
+      await user.click(screen.getByRole('button', { name: 'Reset demo' }));
+      await act(async () => resolve({ ok: true, json: async () => ({ reply: 'Old reply must disappear' }) }));
+      await openAssistant(user);
+      expect(within(phone()).getByRole('log')).not.toHaveTextContent('Old reply');
+      expect(within(phone()).getByRole('log')).toHaveAttribute('aria-busy', 'false');
+    } finally { fetchMock.mockRestore(); }
+  });
+});
+
+describe('individual task conversation and freshness', () => {
+  async function openAssistant(user) {
+    await user.click(tab('More'));
+    await user.click(within(phone()).getByRole('button', { name: 'Open assistant' }));
+  }
+  async function askTask(user, question) {
+    const input = within(phone()).getByRole('textbox', { name: /Ask your own question/i });
+    await user.type(input, question);
+    await user.click(within(phone()).getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(within(phone()).getByRole('log')).toHaveAttribute('aria-busy', 'false'));
+    const replies = phone().querySelectorAll('.demo-assistant-message--assistant .demo-assistant-text');
+    return replies[replies.length - 1].textContent;
+  }
+  it('answers a single walking-task follow-up rather than a visit summary', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+    await askTask(user, 'Do I have any walk related task today?');
+    expect(await askTask(user, 'Has that task been completed?')).toBe('No. Ivor Bankole’s ‘Walk the hallway circuit twice’ task is unchecked.');
+    expect(await askTask(user, 'How long is the walk?')).toContain('does not specify a duration');
+  });
+  it('rereads a task ticked through the UI after navigation', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+    await askTask(user, 'Who has a wound task?');
+    expect(await askTask(user, 'Has that task been completed?')).toMatch(/^No.*unchecked/);
+    await user.click(tab('Visits'));
+    await user.click(within(phone()).getByRole('button', { name: /Priya Raman/ }));
+    await user.click(within(phone()).getByRole('checkbox', { name: 'Check wound dressing' }));
+    await openAssistant(user);
+    expect(await askTask(user, 'Has that task been completed?')).toBe('Yes. Priya Raman’s ‘Check wound dressing’ task is checked.');
+  });
+  it('clarifies multiple tasks and then answers the requested second task', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+    await askTask(user, 'What tasks does Priya have?');
+    expect(await askTask(user, 'Has that task been completed?')).toContain('Which task');
+    expect(await askTask(user, 'Is Check wound dressing completed?')).toMatch(/^No.*unchecked/);
+    await askTask(user, 'What tasks does Priya have?');
+    expect(await askTask(user, 'What about the second task?')).toContain('Check wound dressing (unchecked)');
+  });
+});
+
+describe('the revised five-journey sequence', () => {
+  async function openAssistant(user) {
+    await user.click(tab('More'));
+    await user.click(within(phone()).getByRole('button', { name: 'Open assistant' }));
+  }
+  async function ask(user, q) {
+    await user.type(within(phone()).getByRole('textbox', { name: /Ask your own question/ }), q);
+    await user.click(within(phone()).getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(within(phone()).getByRole('log')).toHaveAttribute('aria-busy', 'false'));
+    return [...phone().querySelectorAll('.demo-assistant-message--assistant .demo-assistant-text')].at(-1).textContent;
+  }
+  it('runs every journey from Reset and answers from the resulting round', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await user.click(screen.getByRole('button', { name: 'Reset demo' }));
+    expect(progressText()).toContain('2 of 7');
+    await user.click(within(phone()).getByRole('button', { name: 'Open visit' }));
+    for (const name of ['Check wound dressing', 'Confirm follow-up appointment is diarised']) {
+      await user.click(within(phone()).getByRole('checkbox', { name }));
+    }
+    await user.click(within(phone()).getByRole('button', { name: 'Complete visit' }));
+    await user.click(tab('Today'));
+    expect(progressText()).toBe('3 of 7 visits complete · 4 remaining');
+    await user.click(tab('Visits'));
+    await user.type(within(phone()).getByRole('searchbox'), 'Ivor');
+    await user.click(within(phone()).getByRole('button', { name: /Ivor Bankole/ }));
+    await user.click(within(phone()).getByRole('button', { name: 'Start travelling' }));
+    await user.click(within(phone()).getByRole('button', { name: 'Return to Planned' }));
+    await user.click(within(dialog()).getByRole('button', { name: 'Return to Planned' }));
+    await user.click(tab('Visits'));
+    await user.clear(within(phone()).getByRole('searchbox'));
+    await user.click(within(phone()).getByRole('button', { name: /Halina Nowak/ }));
+    await user.click(within(phone()).getByRole('button', { name: 'Start travelling' }));
+    await user.click(within(phone()).getByRole('button', { name: 'Cancel visit' }));
+    await user.click(within(dialog()).getByRole('radio', { name: 'Family cancelled' }));
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancel visit' }));
+    await user.click(tab('Today'));
+    expect(progressText()).toBe('4 of 7 visits resolved · 3 completed · 1 cancelled · 3 remaining');
+    await openAssistant(user);
+    expect(await ask(user, 'How many visits are left?')).toMatch(/^3 visits/);
+    expect(await ask(user, 'Which visits are cancelled?')).toContain('Halina Nowak');
+    expect(await ask(user, 'Does anyone have a walking task?')).toContain('Ivor Bankole');
+    expect(await ask(user, 'Has that task been completed?')).toBe('No. Ivor Bankole’s ‘Walk the hallway circuit twice’ task is unchecked.');
+    expect(await ask(user, 'How long for?')).toContain('task does not specify a duration');
+  }, 15000);
+  it('keeps possessive status questions and short task properties in rendered conversation', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    await openAssistant(user);
+    expect(await ask(user, 'did I complete all priyas task?')).toMatch(/^No\..*Priya Raman/);
+    expect(await ask(user, 'any hygiene related task?')).toContain('Support with washing and dressing');
+    expect(await ask(user, 'How long does it take?')).toContain('task does not specify a duration');
+    expect(await ask(user, 'How long is her whole visit?')).toContain('45 minutes');
+  });
+  it('labels fallback, mocked AI, and immediate boundary replies without relabelling history', async () => {
+    const user = userEvent.setup();
+    const request = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ fallback: true }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ reply: 'A mocked AI reply.' }) });
+    try {
+      await renderDemo();
+      await openAssistant(user);
+      await ask(user, 'How many visits are left?');
+      expect(screen.getByRole('status', { name: 'Latest reply source' })).toHaveTextContent('Built-in guidance');
+      await ask(user, 'Who is next?');
+      expect(screen.getByRole('status', { name: 'Latest reply source' })).toHaveTextContent('AI response');
+      expect(within(phone()).getByText('Assistant · Built-in guidance')).toBeInTheDocument();
+      await ask(user, 'Which dressing should I use?');
+      expect(request).toHaveBeenCalledTimes(2);
+      expect(screen.getByRole('status', { name: 'Latest reply source' })).toHaveTextContent('Built-in guidance');
+      expect(within(phone()).getByText('Assistant · AI response')).toBeInTheDocument();
+      expect(within(phone()).getAllByText('Assistant · Built-in guidance')).toHaveLength(2);
+    } finally { request.mockRestore(); }
+  });
+  it('retains selection filters and task properties through rendered transport turns', async () => {
+    const user = userEvent.setup();
+    const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ fallback: true }) });
+    try {
+      await renderDemo();
+      await openAssistant(user);
+      expect(await ask(user, 'How many tasks are left?')).toMatch(/^14 tasks/);
+      expect(await ask(user, 'Which visits after midday are still planned?')).toContain('3 matching visits');
+      expect(await ask(user, 'How many tasks do those visits have altogether?')).toMatch(/^9 tasks/);
+      expect(await ask(user, 'Show Ivor’s walking task')).not.toContain('stair rail');
+      expect(await ask(user, 'Actually, Sunita’s exercises—how long?')).toContain('10 minutes');
+      expect(await ask(user, 'And the whole visit?')).toContain('45 minutes');
+      expect(screen.getByRole('status', { name: 'Latest reply source' })).toHaveTextContent('Built-in guidance');
+      const payload = JSON.parse(request.mock.calls.at(-1)[1].body);
+      expect(payload.snapshot.visits[3].travel).toBe('14 min');
+      expect(payload.snapshot.selectionContext.visitIds).toEqual(['v7']);
+    } finally { request.mockRestore(); }
+  }, 15000);
+  it('keeps one naturally wrapping text container per marker and feedback beneath the phone', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+    const stage = document.querySelector('.demo-stage');
+    expect(stage.nextElementSibling).toHaveClass('demo-phone-controls');
+    for (const item of document.querySelectorAll('.demo-try-list li')) {
+      expect(item.children).toHaveLength(1);
+      expect(item.firstElementChild).toHaveClass('demo-try-text');
+      expect(item.firstElementChild.querySelector('.demo-try-lead')).not.toBeNull();
+    }
+    await user.click(within(phone()).getByRole('button', { name: 'Open visit' }));
+    await user.click(within(phone()).getByRole('checkbox', { name: 'Check wound dressing' }));
+    expect(screen.getByRole('status', { name: 'Latest action' })).toHaveTextContent('Priya Raman — Check wound dressing: checked.');
+    expect(document.querySelectorAll('.demo-reset-status[role="status"]')).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'Reset demo' }));
+    expect(screen.getByRole('status', { name: 'Latest action' })).toHaveTextContent('Demo reset.');
+    expect(screen.getByRole('status', { name: 'Latest action' })).not.toHaveTextContent('wound dressing');
+  });
+  it('keeps a native ordered list and the source explanation outside it', async () => {
+    await renderDemo();
+    const list = document.querySelector('.demo-try-list');
+    expect(list.tagName).toBe('OL');
+    expect(list.children).toHaveLength(5);
+    expect([...list.children].every(node => node.tagName === 'LI')).toBe(true);
+    const explanation = screen.getByText('The assistant answers questions about the fictional round. When live AI is unavailable, built-in guidance provides responses.');
+    expect(explanation.closest('.demo-cue')).not.toBeNull();
+    expect(explanation.closest('ol, .demo-app')).toBeNull();
+    const css = readFileSync('src/components/pages/AjaniMobileDemo.css', 'utf8');
+    expect(css).toContain('list-style-position: outside');
+    expect(css).toContain('text-indent: 0');
+    expect(css).toContain('display: list-item');
+  });
+});
+
+/*
+ * The two-column composition, asserted against the stylesheet.
+ *
+ * jsdom does not lay out, so these check the placement rules rather than
+ * measured pixels — which is exactly the limit worth stating: the grid areas
+ * and the marker column are verifiable here, their rendered geometry is not.
+ */
+describe('the demo page composition', () => {
+  const css = () => readFileSync('src/components/pages/AjaniMobileDemo.css', 'utf8');
+  const rule = (selector) => {
+    const match = css().match(
+      new RegExp(`${selector.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\s*\\{([^}]*)\\}`),
+    );
+    return match ? match[1] : '';
+  };
+
+  it('centres the label and the heading together', () => {
+    expect(css()).toMatch(/\.demo-page > \.container > \.eyebrow,\s*\n\.demo-page-title \{[^}]*text-align: center/);
+  });
+
+  it('puts the introduction above the journey card in the left column', () => {
+    expect(rule('.demo-page-lede')).toMatch(/grid-column: 1/);
+    expect(rule('.demo-page-lede')).toMatch(/grid-row: 1/);
+    expect(rule('.demo-companion')).toMatch(/grid-column: 1/);
+    expect(rule('.demo-companion')).toMatch(/grid-row: 2 \/ span 2/);
+  });
+
+  it('stacks the preview, phone and controls in the right column', () => {
+    expect(rule('.demo-cue')).toMatch(/grid-column: 2/);
+    expect(rule('.demo-cue')).toMatch(/grid-row: 1/);
+    expect(rule('.demo-stage')).toMatch(/grid-column: 2/);
+    expect(rule('.demo-stage')).toMatch(/grid-row: 2/);
+    expect(rule('.demo-phone-controls')).toMatch(/grid-column: 2/);
+    expect(rule('.demo-phone-controls')).toMatch(/grid-row: 3/);
+  });
+
+  it('keeps the links at the foot of the journey card', async () => {
+    await renderDemo();
+    const card = document.querySelector('.demo-companion');
+    expect(card.lastElementChild).toHaveClass('demo-companion-links');
+    expect(within(card).getByRole('link', { name: 'Back to the case study' })).toBeInTheDocument();
+  });
+
+  it('collapses to one column and drops every placement on mobile', () => {
+    const mobile = css().slice(css().indexOf('@media screen and (max-width: 900px)'));
+    expect(mobile).toMatch(/grid-template-columns: 1fr/);
+    for (const selector of [
+      '.demo-page-lede', '.demo-phone-controls', '.demo-cue', '.demo-stage', '.demo-companion',
+    ]) {
+      expect(mobile).toContain(selector);
+    }
+    expect(mobile).toMatch(/grid-column: auto/);
+  });
+
+  it('reserves a marker column on the item, without measuring or transforming', () => {
+    const item = rule('.demo-try-list li');
+    expect(item).toMatch(/margin-left: 1\.75rem/);
+    expect(item).toMatch(/list-style-position: outside/);
+    expect(item).toMatch(/text-indent: 0/);
+    expect(item).toMatch(/padding-inline-start: 0/);
+    expect(rule('.demo-try-list')).toMatch(/padding-left: 0/);
+
+    /* None of the techniques the brief rules out. */
+    const list = `${rule('.demo-try-list')} ${item}`;
+    expect(list).not.toMatch(/transform|clip|overflow: hidden|height:/);
+  });
+
+  it('announces the latest action through one region named by its visible label', async () => {
+    const user = userEvent.setup();
+    await renderDemo();
+
+    const label = document.querySelector('.demo-action-label');
+    const status = document.querySelector('.demo-reset-status');
+    expect(status.getAttribute('aria-labelledby')).toBe(label.id);
+    expect(status.hasAttribute('aria-label')).toBe(false);
+    expect(document.querySelectorAll('.demo-reset-status')).toHaveLength(1);
+
+    await user.click(within(phone()).getByRole('button', { name: 'Open visit' }));
+    await user.click(within(phone()).getByRole('checkbox', { name: 'Check wound dressing' }));
+    expect(screen.getByRole('status', { name: 'Latest action' }))
+      .toHaveTextContent('Priya Raman — Check wound dressing: checked.');
+
+    await user.click(screen.getByRole('button', { name: 'Reset demo' }));
+    expect(screen.getByRole('status', { name: 'Latest action' })).toHaveTextContent('Demo reset.');
+    expect(screen.getByRole('status', { name: 'Latest action' })).not.toHaveTextContent('wound');
   });
 });

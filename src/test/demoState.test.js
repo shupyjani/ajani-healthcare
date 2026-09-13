@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CANCELLATION_NOTE_LIMIT,
+  CANCELLATION_REASONS,
   activeVisit,
+  canCancel,
   canEditTasks,
   canReturnToPlanned,
   canTransition,
@@ -8,13 +11,16 @@ import {
   filteredVisits,
   findVisit,
   initialDemoState,
+  isInProgress,
   nextStatus,
   outstandingTasks,
   primaryVisit,
   progress,
+  progressSummary,
   resultSummary,
   taskLockReason,
   taskProgress,
+  validateCancellation,
   todayVisits,
 } from '../lib/demoState';
 
@@ -637,7 +643,14 @@ describe('en route may be returned to planned', () => {
 
     /* v3 is complete, so the next visit in hand is v4 again — now planned. */
     expect(primaryVisit(state).id).toBe('v4');
-    expect(progress(state)).toEqual({ completed: 3, total: 7, remaining: 4, percent: 43 });
+    expect(progress(state)).toEqual({
+      completed: 3,
+      cancelled: 0,
+      resolved: 3,
+      total: 7,
+      remaining: 4,
+      percent: 43,
+    });
 
     const planned = reduce(state, { type: 'set-filter', filter: 'planned' });
     expect(filteredVisits(planned).map((v) => v.id)).toEqual(['v4', 'v5', 'v6', 'v7']);
@@ -840,5 +853,329 @@ describe('tasks may only be recorded on arrival', () => {
     expect(taskProgress(findVisit(state, 'v3'))).toEqual({ done: 2, total: 3 });
     /* And they are now frozen. */
     expect(demoReducer(state, { type: 'toggle-task', visitId: 'v3', taskId: 'v3t3' })).toBe(state);
+  });
+});
+
+describe('cancelling a visit', () => {
+  const freeRound = () => complete(initialDemoState(), 'v3');
+  const cancel = (state, id, reason = 'Family cancelled', note = '') =>
+    reduce(state, { type: 'cancel-visit', id, reason, note });
+
+  describe('which visits may be cancelled', () => {
+    it('permits planned and en route', () => {
+      const state = initialDemoState();
+      expect(canCancel(findVisit(state, 'v4'))).toBe(true); /* planned */
+
+      const enRoute = reduce(freeRound(), { type: 'advance-status', id: 'v4' });
+      expect(canCancel(findVisit(enRoute, 'v4'))).toBe(true);
+    });
+
+    it('refuses arrived, completed and cancelled', () => {
+      const state = initialDemoState();
+      expect(canCancel(findVisit(state, 'v3'))).toBe(false); /* arrived */
+      expect(canCancel(findVisit(state, 'v1'))).toBe(false); /* completed */
+
+      const cancelled = cancel(state, 'v4');
+      expect(canCancel(findVisit(cancelled, 'v4'))).toBe(false);
+    });
+
+    it('returns the identical state object when the status forbids it', () => {
+      const state = initialDemoState();
+      for (const id of ['v3', 'v1']) {
+        expect(demoReducer(state, { type: 'cancel-visit', id, reason: 'Family cancelled' }))
+          .toBe(state);
+        expect(demoReducer(state, { type: 'request-cancel', id })).toBe(state);
+      }
+      expect(demoReducer(state, { type: 'cancel-visit', id: 'nope', reason: 'Family cancelled' }))
+        .toBe(state);
+    });
+
+    it('refuses a second cancellation of an already cancelled visit', () => {
+      const once = cancel(initialDemoState(), 'v4');
+      expect(demoReducer(once, { type: 'cancel-visit', id: 'v4', reason: 'Office instruction' }))
+        .toBe(once);
+    });
+  });
+
+  describe('the reason and note', () => {
+    it('offers the five approved reasons', () => {
+      expect(CANCELLATION_REASONS).toEqual([
+        'Family cancelled',
+        'Visit no longer required',
+        'Client unavailable',
+        'Office instruction',
+        'Other',
+      ]);
+    });
+
+    it('requires a reason from that list', () => {
+      expect(validateCancellation({})).toBe('Choose a reason for cancelling this visit.');
+      expect(validateCancellation({ reason: '' })).toBe('Choose a reason for cancelling this visit.');
+      expect(validateCancellation({ reason: 'Made up' }))
+        .toBe('Choose a reason for cancelling this visit.');
+    });
+
+    it('accepts any listed reason with no note', () => {
+      for (const reason of CANCELLATION_REASONS.filter((r) => r !== 'Other')) {
+        expect(validateCancellation({ reason })).toBeNull();
+      }
+    });
+
+    it('requires the note when the reason is Other', () => {
+      expect(validateCancellation({ reason: 'Other' }))
+        .toBe('Add a note describing why this visit was cancelled.');
+      expect(validateCancellation({ reason: 'Other', note: '   ' }))
+        .toBe('Add a note describing why this visit was cancelled.');
+      expect(validateCancellation({ reason: 'Other', note: 'Road closed' })).toBeNull();
+    });
+
+    it('holds the note to its limit', () => {
+      const long = 'x'.repeat(CANCELLATION_NOTE_LIMIT + 1);
+      expect(validateCancellation({ reason: 'Family cancelled', note: long }))
+        .toBe(`Keep the note to ${CANCELLATION_NOTE_LIMIT} characters or fewer.`);
+      expect(validateCancellation({
+        reason: 'Family cancelled',
+        note: 'x'.repeat(CANCELLATION_NOTE_LIMIT),
+      })).toBeNull();
+    });
+
+    it('refuses an invalid cancellation without changing anything', () => {
+      const state = initialDemoState();
+      expect(demoReducer(state, { type: 'cancel-visit', id: 'v4' })).toBe(state);
+      expect(demoReducer(state, { type: 'cancel-visit', id: 'v4', reason: 'Other' })).toBe(state);
+      expect(demoReducer(state, { type: 'cancel-visit', id: 'v4', reason: 'Nope' })).toBe(state);
+    });
+
+    it('records the reason and the trimmed note on the visit', () => {
+      const state = cancel(initialDemoState(), 'v4', 'Other', '  Road closed  ');
+      expect(findVisit(state, 'v4').cancellation).toEqual({
+        reason: 'Other',
+        note: 'Road closed',
+      });
+    });
+  });
+
+  describe('what cancelling changes, and what it leaves alone', () => {
+    it('sets the status to cancelled and nothing else about the visit', () => {
+      const before = initialDemoState();
+      const after = cancel(before, 'v4');
+
+      const { status: _s, cancellation: _c, ...restAfter } = findVisit(after, 'v4');
+      const { status: _s2, ...restBefore } = findVisit(before, 'v4');
+
+      expect(findVisit(after, 'v4').status).toBe('cancelled');
+      expect(restAfter).toEqual(restBefore);
+    });
+
+    it('leaves the tasks byte-identical', () => {
+      const before = initialDemoState();
+      const after = cancel(before, 'v4');
+
+      expect(findVisit(after, 'v4').tasks).toEqual(findVisit(before, 'v4').tasks);
+      expect(taskProgress(findVisit(after, 'v4'))).toEqual({ done: 0, total: 3 });
+      /* Not completed, not ticked, not cleared. */
+      expect(findVisit(after, 'v4').tasks.some((t) => t.done)).toBe(false);
+    });
+
+    it('leaves every other visit untouched', () => {
+      const before = initialDemoState();
+      const after = cancel(before, 'v4');
+
+      for (const id of ['v1', 'v2', 'v3', 'v5', 'v6', 'v7']) {
+        expect(findVisit(after, id)).toEqual(findVisit(before, id));
+      }
+    });
+
+    it('releases the active lock when the cancelled visit was en route', () => {
+      const enRoute = reduce(freeRound(), { type: 'advance-status', id: 'v4' });
+      expect(activeVisit(enRoute).id).toBe('v4');
+
+      const cancelled = cancel(enRoute, 'v4', 'Client unavailable');
+      expect(findVisit(cancelled, 'v4').status).toBe('cancelled');
+      expect(activeVisit(cancelled)).toBeNull();
+
+      /* And another visit may now start. */
+      const started = reduce(cancelled, { type: 'advance-status', id: 'v5' });
+      expect(started.blockedTransition).toBeNull();
+      expect(statusOf(started, 'v5')).toBe('en-route');
+    });
+
+    it('announces the cancellation with its reason', () => {
+      const state = cancel(initialDemoState(), 'v4', 'Office instruction');
+      expect(state.announcement).toBe('Ivor Bankole’s visit was cancelled. Office instruction.');
+    });
+  });
+
+  describe('a cancelled visit is a dead end', () => {
+    const cancelled = () => cancel(initialDemoState(), 'v4');
+
+    it('cannot advance to any status', () => {
+      const state = cancelled();
+      expect(nextStatus('cancelled')).toBeNull();
+      expect(demoReducer(state, { type: 'advance-status', id: 'v4' })).toBe(state);
+      expect(statusOf(state, 'v4')).toBe('cancelled');
+    });
+
+    it('is refused by every forward transition', () => {
+      for (const to of ['planned', 'en-route', 'arrived', 'completed']) {
+        expect(canTransition('cancelled', to)).toBe(false);
+      }
+    });
+
+    it('cannot become active', () => {
+      const state = cancelled();
+      expect(activeVisit(state)).toBe(findVisit(state, 'v3')); /* Priya, arrived */
+      expect(isInProgress('cancelled')).toBe(false);
+    });
+
+    it('cannot be returned to planned', () => {
+      const state = cancelled();
+      expect(canReturnToPlanned(findVisit(state, 'v4'))).toBe(false);
+      expect(demoReducer(state, { type: 'return-to-planned', id: 'v4' })).toBe(state);
+    });
+
+    it('keeps a read-only checklist with its own explanation', () => {
+      const state = cancelled();
+      expect(canEditTasks(findVisit(state, 'v4'))).toBe(false);
+      expect(demoReducer(state, { type: 'toggle-task', visitId: 'v4', taskId: 'v4t1' }))
+        .toBe(state);
+      expect(taskLockReason(findVisit(state, 'v4')))
+        .toBe('This cancelled visit’s checklist is read-only.');
+    });
+  });
+
+  describe('progress counts completed and cancelled apart', () => {
+    it('reads exactly as before when nothing is cancelled', () => {
+      const state = initialDemoState();
+      expect(progress(state).percent).toBe(29);
+      expect(progressSummary(state)).toBe('2 of 7 visits complete · 5 remaining');
+    });
+
+    it('does not raise the completed count', () => {
+      const state = cancel(initialDemoState(), 'v4');
+      expect(progress(state).completed).toBe(2);
+      expect(progress(state).cancelled).toBe(1);
+      expect(progress(state).resolved).toBe(3);
+      expect(progress(state).remaining).toBe(4);
+    });
+
+    it('spells both outcomes out once there is a cancellation', () => {
+      const state = cancel(initialDemoState(), 'v4');
+      expect(progressSummary(state))
+        .toBe('3 of 7 visits resolved · 2 completed · 1 cancelled · 4 remaining');
+    });
+
+    it('tracks resolved visits on the bar', () => {
+      const state = cancel(initialDemoState(), 'v4');
+      expect(progress(state).percent).toBe(43); /* 3 of 7 resolved */
+    });
+
+    it('adds up across several cancellations and a completion', () => {
+      const state = cancel(
+        cancel(reduce(initialDemoState(), { type: 'advance-status', id: 'v3', confirmed: true }), 'v4'),
+        'v5',
+        'Client unavailable',
+      );
+
+      expect(progress(state)).toEqual({
+        completed: 3,
+        cancelled: 2,
+        resolved: 5,
+        total: 7,
+        remaining: 2,
+        percent: 71,
+      });
+      expect(progressSummary(state))
+        .toBe('5 of 7 visits resolved · 3 completed · 2 cancelled · 2 remaining');
+    });
+  });
+
+  describe('a cancelled visit stays findable but leads nothing', () => {
+    it('is skipped by the primary visit selector', () => {
+      /* v3 completed, so v4 would lead; cancelling it moves the card to v5. */
+      const state = cancel(freeRound(), 'v4');
+      expect(primaryVisit(state).id).toBe('v5');
+    });
+
+    it('still keeps the active visit ahead of everything', () => {
+      const state = cancel(initialDemoState(), 'v4');
+      expect(primaryVisit(state).id).toBe('v3'); /* Priya, arrived */
+    });
+
+    it('is null once nothing is left waiting', () => {
+      let state = initialDemoState();
+      state = complete(state, 'v3');
+      for (const id of ['v4', 'v5', 'v6', 'v7']) state = cancel(state, id);
+      expect(primaryVisit(state)).toBeNull();
+    });
+
+    it('appears under All and in search results', () => {
+      const state = cancel(initialDemoState(), 'v4');
+      expect(filteredVisits(state).map((v) => v.id)).toContain('v4');
+
+      const searched = reduce(state, { type: 'set-query', query: 'Ivor' });
+      expect(filteredVisits(searched).map((v) => v.id)).toEqual(['v4']);
+    });
+
+    it('is matched by none of the four status filters', () => {
+      const state = cancel(initialDemoState(), 'v4');
+      for (const filter of ['planned', 'in-progress', 'completed']) {
+        const narrowed = reduce(state, { type: 'set-filter', filter });
+        expect(filteredVisits(narrowed).map((v) => v.id)).not.toContain('v4');
+      }
+    });
+
+    it('is not hidden by the show-completed preference', () => {
+      const state = reduce(
+        cancel(initialDemoState(), 'v4'),
+        { type: 'set-preference', key: 'showCompletedOnToday', value: false },
+      );
+
+      /* Completed visits go; the cancelled one stays. */
+      expect(todayVisits(state).map((v) => v.id)).toEqual(['v3', 'v4', 'v5', 'v6', 'v7']);
+    });
+  });
+
+  describe('the pending cancellation', () => {
+    it('opens only for a cancellable visit', () => {
+      const state = reduce(initialDemoState(), { type: 'request-cancel', id: 'v4' });
+      expect(state.pendingCancelId).toBe('v4');
+    });
+
+    it('is dismissed without touching a visit', () => {
+      const before = initialDemoState();
+      const after = reduce(
+        before,
+        { type: 'request-cancel', id: 'v4' },
+        { type: 'dismiss-cancel' },
+      );
+
+      expect(after.pendingCancelId).toBeNull();
+      expect(after.visits).toEqual(before.visits);
+    });
+
+    it('clears once the cancellation is recorded', () => {
+      const state = reduce(
+        initialDemoState(),
+        { type: 'request-cancel', id: 'v4' },
+        { type: 'cancel-visit', id: 'v4', reason: 'Family cancelled' },
+      );
+      expect(state.pendingCancelId).toBeNull();
+    });
+  });
+
+  describe('reset', () => {
+    it('restores the seven visits with no cancellation records', () => {
+      const state = reduce(
+        cancel(cancel(initialDemoState(), 'v4'), 'v5', 'Office instruction'),
+        { type: 'reset' },
+      );
+
+      expect(state.visits).toEqual(initialDemoState().visits);
+      expect(state.visits.some((v) => v.status === 'cancelled')).toBe(false);
+      expect(state.visits.some((v) => v.cancellation)).toBe(false);
+      expect(state.pendingCancelId).toBeNull();
+      expect(progressSummary(state)).toBe('2 of 7 visits complete · 5 remaining');
+    });
   });
 });

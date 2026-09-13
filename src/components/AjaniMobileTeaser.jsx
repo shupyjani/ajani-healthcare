@@ -39,7 +39,7 @@ function AjaniMobileTeaser() {
       <div className="teaser-content">
         <span className="teaser-lockup">
           <span className="teaser-mark">
-            <BrandMark size={40} className="brand-mark teaser-brand-mark" />
+            <BrandMark size={68} className="brand-mark teaser-brand-mark" />
           </span>
 
           <span className="teaser-name">Ajani Mobile</span>

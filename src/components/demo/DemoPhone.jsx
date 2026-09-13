@@ -6,7 +6,10 @@ import VisitsScreen from './VisitsScreen';
 import MoreScreen from './MoreScreen';
 import VisitDetailScreen from './VisitDetailScreen';
 import ConfirmDialog from './ConfirmDialog';
-import { activeVisit, findVisit, openVisit } from '../../lib/demoState';
+import CancelVisitDialog from './CancelVisitDialog';
+import AssistantScreen from './AssistantScreen';
+import { activeVisit, demoReducer, findVisit, openVisit } from '../../lib/demoState';
+import { askAssistant } from '../../lib/askAssistant';
 import './DemoPhone.css';
 
 const PANEL_ID = 'demo-panel';
@@ -110,10 +113,16 @@ function describeDialog(state) {
 function DemoPhone({ state, dispatch }) {
   /* id -> row node, so closing a detail can return focus where it came from. */
   const rowRefs = useRef(new Map());
+  const panelRef = useRef(null);
+  /* Read inside the async ask handler, never during render. Kept current in an
+     effect rather than assigned while rendering, so a re-render cannot observe
+     a half-written ref. */
+  const stateRef = useRef(state);
   const lastOpenedId = useRef(null);
   const restoreFocusId = useRef(null);
   const detail = openVisit(state);
   const dialog = describeDialog(state);
+  const cancelling = state.pendingCancelId ? findVisit(state, state.pendingCancelId) : null;
 
   const onOpen = useCallback(
     (id) => {
@@ -160,7 +169,57 @@ function DemoPhone({ state, dispatch }) {
     document.getElementById(`demo-tab-${state.tab}`)?.focus();
   }, [detail, state.tab]);
 
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  /*
+   * A new screen starts at the top.
+   *
+   * The panel is one scrolling box shared by every screen, so without this a
+   * reader who had scrolled down through a long assistant conversation would
+   * arrive at Today already scrolled past the shift summary.
+   */
+  const screenKey = `${state.tab}|${state.openVisitId ?? ''}|${state.assistant.open}`;
+  useEffect(() => {
+    if (panelRef.current) panelRef.current.scrollTop = 0;
+    // screenKey is a re-run trigger, not a value the effect body reads.
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies
+  }, [screenKey]);
+
   const onAdvance = useCallback((id) => dispatch({ type: 'advance-status', id }), [dispatch]);
+
+  /*
+   * One question, one answer.
+   *
+   * The state passed to askAssistant is the snapshot it reads from; the only
+   * thing dispatched back is the conversation. No branch of this can change a
+   * visit, a task or a preference.
+   */
+  const onAsk = useCallback(
+    (question) => {
+      const current = stateRef.current;
+      const pending = demoReducer(current, { type: 'assistant-ask', question });
+      if (pending === current) return;
+      stateRef.current = pending;
+      dispatch({ type: 'assistant-ask', question });
+
+      /*
+       * The id this ask will carry, so the reply can be matched to it.
+       *
+       * Only one question is ever in flight — the form and the suggestions are
+       * both disabled while the assistant is thinking — so the next id is the
+       * current one plus one. A reply that arrives after a Reset, or after a
+       * newer question, no longer matches and the reducer drops it.
+       */
+      const requestId = pending.assistant.requestId;
+
+      askAssistant(question, current)
+        .then(({ text, mode, context }) => dispatch({ type: 'assistant-reply', text, mode, context, requestId }))
+        .catch(() => dispatch({ type: 'assistant-error', requestId }));
+    },
+    [dispatch],
+  );
 
   return (
     <div className="demo-app">
@@ -168,12 +227,24 @@ function DemoPhone({ state, dispatch }) {
         <div className="demo-screen">
           <div
             className="demo-screen-scroll"
+            ref={panelRef}
             id={PANEL_ID}
             role="tabpanel"
             aria-labelledby={`demo-tab-${state.tab}`}
             tabIndex={-1}
           >
-            {detail ? (
+            {state.assistant.open ? (
+              <AssistantScreen
+                assistant={state.assistant}
+                onBack={() => {
+                  dispatch({ type: 'close-assistant' });
+                  window.requestAnimationFrame(() =>
+                    document.getElementById(`demo-tab-${state.tab}`)?.focus(),
+                  );
+                }}
+                onAsk={onAsk}
+              />
+            ) : detail ? (
               <VisitDetailScreen
                 visit={detail}
                 onBack={onBack}
@@ -182,6 +253,7 @@ function DemoPhone({ state, dispatch }) {
                 }
                 onAdvance={onAdvance}
                 onRequestReturn={(id) => dispatch({ type: 'request-return', id })}
+                onRequestCancel={(id) => dispatch({ type: 'request-cancel', id })}
               />
             ) : (
               <>
@@ -208,6 +280,7 @@ function DemoPhone({ state, dispatch }) {
                     onPreference={(key, value) =>
                       dispatch({ type: 'set-preference', key, value })
                     }
+                    onOpenAssistant={() => dispatch({ type: 'open-assistant' })}
                   />
                 )}
               </>
@@ -219,6 +292,16 @@ function DemoPhone({ state, dispatch }) {
             panelId={PANEL_ID}
             onSelect={(tab) => dispatch({ type: 'select-tab', tab })}
           />
+
+          {cancelling && (
+            <CancelVisitDialog
+              visit={cancelling}
+              onConfirm={({ reason, note }) =>
+                dispatch({ type: 'cancel-visit', id: cancelling.id, reason, note })
+              }
+              onDismiss={() => dispatch({ type: 'dismiss-cancel' })}
+            />
+          )}
 
           {dialog && (
             <ConfirmDialog
